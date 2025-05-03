@@ -18,5 +18,9 @@
                     "titleBar.inactiveBackground": "#676af199",
                     "titleBar.inactiveForeground": "#e7e7e799"
           },
-          "peacock.color": "#676AF1"
+          "peacock.color": "#676AF1",
+          "cSpell.words": [
+                    "Inreach",
+                    "solopreneurs"
+          ]
 }
