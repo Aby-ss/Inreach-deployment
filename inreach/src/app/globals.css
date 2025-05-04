@@ -25,7 +25,14 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-.dm-sans {
-  font-family: "DM Sans", sans-serif;
+@import url('https://fonts.googleapis.com/css2?family=Gabarito:wght@400..900&display=swap');
+
+.gabarito-medium {
+  font-family: "Gabarito", sans-serif;
+  font-weight: 400;
+}
+
+.gabarito-semibold {
+  font-family: "Gabarito", sans-serif;
   font-weight: 600;
 }
