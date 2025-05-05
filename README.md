@@ -23,22 +23,26 @@ An AI tool that writes and sends custom email pitches for faster, smarter outrea
 
 ### Creating custom GPTs → Knowledge Embedding
 
-1. Collect mock or knowledge data about certain topic
-    ☐ Collect and clean email/podcast copy data
-    ☐ Remove irrelevant or repetitive segments
-    ☐ Standardize formats for consistency
-2. Vectorise the data to make it easier for model to comprehend user requests and data entries
-    ☐ Break large documents into smaller, meaningful chunks (~500 tokens)
-    ☐ Maintain contextual flow across chunks
-    ☐ Vectorize data with embeddings using OpenAI or a local model
-3. Perform similarity search on the user entered data
-    ☐ Build a similarity search function
-    ☐ Retrieve the most relevant vector chunks based on user query
-4. Setup LLMChain & prompts for handling the data response
-    ☐ Setup LLMChain or RetrievalQA using LangChain
-    ☐ Feed prompt + retrieved context into the chain
-    ☐ Generate accurate, high-quality outputs
-5. Retrieval argument generation
-    ☐ Tune system prompts and outputs
-    ☐ Adjust temperature, output length, and response format for marketing-quality copy
-    ☐ Iteratively test and refine
+1. Collect mock or knowledge data about certain topic  
+   - [ ] Collect and clean email/podcast copy data  
+   - [ ] Remove irrelevant or repetitive segments  
+   - [ ] Standardize formats for consistency  
+
+2. Vectorise the data to make it easier for model to comprehend user requests and data entries  
+   - [ ] Break large documents into smaller, meaningful chunks (~500 tokens)  
+   - [ ] Maintain contextual flow across chunks  
+   - [ ] Vectorize data with embeddings using OpenAI or a local model  
+
+3. Perform similarity search on the user entered data  
+   - [ ] Build a similarity search function  
+   - [ ] Retrieve the most relevant vector chunks based on user query  
+
+4. Setup LLMChain & prompts for handling the data response  
+   - [ ] Setup LLMChain or RetrievalQA using LangChain  
+   - [ ] Feed prompt + retrieved context into the chain  
+   - [ ] Generate accurate, high-quality outputs  
+
+5. Retrieval argument generation  
+   - [ ] Tune system prompts and outputs  
+   - [ ] Adjust temperature, output length, and response format for marketing-quality copy  
+   - [ ] Iteratively test and refine  
