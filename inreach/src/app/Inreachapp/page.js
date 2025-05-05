@@ -10,6 +10,7 @@ export default function Home() {
   const [columns, setColumns] = useState({});
   const [manualMode, setManualMode] = useState(false);
   const [confirmedManual, setConfirmedManual] = useState(false);
+  const [columnIndexMap, setColumnIndexMap] = useState(null);
 
   const detectColumnType = (header, values) => {
     const joined = values.join(" ").toLowerCase();
@@ -23,6 +24,17 @@ export default function Home() {
     return "Unknown";
   };
 
+  const getColumnIndexes = (columns, headers) => {
+    const indexMap = {};
+    for (const [header, type] of Object.entries(columns)) {
+      const index = headers.indexOf(header);
+      if (index !== -1) {
+        indexMap[type.toLowerCase()] = index;
+      }
+    }
+    return indexMap;
+  };
+
   const onDrop = useCallback((acceptedFiles) => {
     const file = acceptedFiles[0];
     if (!file) return;
@@ -30,6 +42,7 @@ export default function Home() {
     setUploadedFileName(file.name);
     setManualMode(false);
     setConfirmedManual(false);
+    setColumnIndexMap(null);
 
     Papa.parse(file, {
       header: true,
@@ -60,7 +73,11 @@ export default function Home() {
   };
 
   const handleAcceptColumns = () => {
+    const headers = Object.keys(previewData[0] || {});
+    const map = getColumnIndexes(columns, headers);
+    setColumnIndexMap(map);
     alert("✅ Column detection accepted.");
+    console.log("📊 Final column indexes map:", map);
   };
 
   const handleManualInput = () => {
@@ -69,7 +86,11 @@ export default function Home() {
 
   const handleConfirmManual = () => {
     setConfirmedManual(true);
+    const headers = Object.keys(previewData[0] || {});
+    const map = getColumnIndexes(columns, headers);
+    setColumnIndexMap(map);
     alert("✅ Manual column selection confirmed.");
+    console.log("🛠️ Final manual column indexes map:", map);
   };
 
   return (
@@ -122,20 +143,33 @@ export default function Home() {
         )}
 
         {previewData.length > 0 && !manualMode && (
-          <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={handleAcceptColumns}
-              className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition"
-            >
-              ✅ Column detection is accurate
-            </button>
-            <button
-              onClick={handleManualInput}
-              className="bg-gray-200 text-gray-800 px-6 py-3 rounded-xl hover:bg-gray-300 transition"
-            >
-              🛠️ Manually define columns
-            </button>
-          </div>
+          <><div className="mt-8 w-full max-w-4xl border border-gray-300 rounded-xl p-6 bg-white shadow-md">
+            <h2 className="text-xl font-semibold mb-4">🔍 Auto-detected column types</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {Object.entries(columns).map(([header, type], i) => (
+                <div
+                  key={i}
+                  className="border border-gray-200 rounded-lg p-4 bg-gray-50 flex flex-col gap-1"
+                >
+                  <p className="text-sm font-semibold text-gray-700">📁 <span className="underline">{header}</span></p>
+                  <p className="text-sm text-blue-700">➡️ Detected as: <span className="font-medium">{type}</span></p>
+                </div>
+              ))}
+            </div>
+          </div><div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={handleAcceptColumns}
+                className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition"
+              >
+                ✅ Column detection is accurate
+              </button>
+              <button
+                onClick={handleManualInput}
+                className="bg-gray-200 text-gray-800 px-6 py-3 rounded-xl hover:bg-gray-300 transition"
+              >
+                🛠️ Manually define columns
+              </button>
+            </div></>
         )}
 
         {manualMode && (
