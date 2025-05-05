@@ -16,7 +16,7 @@ Custom-GPT Development:
           ☐ Tune system prompt and outputs
 
 App Development:
-          ☐ Add file uploader/drag and drop div to main app page
+          ✔ Add file uploader/drag and drop div to main app page
           ☐ Read spreadsheet content and Query columns using regex statements
           ☐ Showcase spreadsheet columns detected for user confirmation
           ☐ Generate custom pitch and email marketing copy using Custom-AI
