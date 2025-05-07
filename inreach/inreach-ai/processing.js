@@ -1,18 +1,11 @@
-// ai/processing.js
-
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
-const { OpenAI } = require('openai');
+const axios = require('axios');
 const { ChromaClient } = require('chromadb');
 
 // Load environment variables
 dotenv.config();
-
-// Setup OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 // Setup ChromaDB client
 const chroma = new ChromaClient();
@@ -36,7 +29,7 @@ async function preprocessText(filePath) {
   return chunks;
 }
 
-// 🧠 Embed and Store vectors in Chroma
+// 🧠 Embed and Store vectors in Chroma using Hugging Face
 async function embedAndStore(chunks) {
   const collection = await chroma.getOrCreateCollection({
     name: 'podcasts',
@@ -45,12 +38,18 @@ async function embedAndStore(chunks) {
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
 
-    const response = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: chunk,
-    });
+    const response = await axios.post(
+      'https://api-inference.huggingface.co/embeddings/sentence-transformers/all-MiniLM-L6-v2',
+      { inputs: chunk },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
-    const vector = response.data[0].embedding;
+    const vector = response.data; // HF returns just the array
 
     await collection.add({
       ids: [`chunk-${i}`],
