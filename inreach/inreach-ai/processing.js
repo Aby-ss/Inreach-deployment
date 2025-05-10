@@ -1,71 +1,82 @@
 const fs = require('fs');
 const path = require('path');
-const dotenv = require('dotenv');
-const axios = require('axios');
-const { ChromaClient } = require('chromadb');
 
-// Load environment variables
-dotenv.config();
-
-// Setup ChromaDB client
-const chroma = new ChromaClient();
-
-// 🔧 Clean and Chunk the input text
-async function preprocessText(filePath) {
-  const rawText = fs.readFileSync(filePath, 'utf-8');
-
-  const cleanedText = rawText
-    .replace(/\n+/g, ' ')      // Remove excess newlines
-    .replace(/–|—/g, '-')      // Normalize dashes
-    .replace(/\s+/g, ' ')      // Remove extra spaces
-    .trim();
-
+/**
+ * Clean and chunk text intelligently for vectorization.
+ */
+function cleanAndChunkText(text, chunkSize = 1000, overlap = 200) {
+  const cleanedText = text.replace(/\s+/g, ' ').trim();
   const chunks = [];
-  const chunkSize = 500;
-  for (let i = 0; i < cleanedText.length; i += chunkSize) {
-    chunks.push(cleanedText.slice(i, i + chunkSize));
+  let start = 0;
+
+  while (start < cleanedText.length) {
+    const end = Math.min(start + chunkSize, cleanedText.length);
+    const chunk = cleanedText.slice(start, end);
+    chunks.push(chunk);
+    start += chunkSize - overlap;
   }
 
   return chunks;
 }
 
-// 🧠 Embed and Store vectors in Chroma using Hugging Face
-async function embedAndStore(chunks) {
-  const collection = await chroma.getOrCreateCollection({
-    name: 'podcasts',
-  });
-
-  for (let i = 0; i < chunks.length; i++) {
-    const chunk = chunks[i];
-
-    const response = await axios.post(
-      'https://api-inference.huggingface.co/embeddings/sentence-transformers/all-MiniLM-L6-v2',
-      { inputs: chunk },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    const vector = response.data; // HF returns just the array
-
-    await collection.add({
-      ids: [`chunk-${i}`],
-      embeddings: [vector],
-      metadatas: [{ chunkIndex: i }],
-      documents: [chunk],
-    });
-
-    console.log(`✅ Embedded and stored chunk ${i + 1}/${chunks.length}`);
-  }
+/**
+ * Compute cosine similarity between two vectors.
+ */
+function cosineSimilarity(vecA, vecB) {
+  const dot = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
+  const magA = Math.sqrt(vecA.reduce((sum, val) => sum + val ** 2, 0));
+  const magB = Math.sqrt(vecB.reduce((sum, val) => sum + val ** 2, 0));
+  return dot / (magA * magB);
 }
 
-// 🚀 Main
-(async () => {
-  const filePath = path.join(__dirname, 'data', 'podcasts.txt');
-  const chunks = await preprocessText(filePath);
-  await embedAndStore(chunks);
-  console.log('✅ All chunks processed and stored.');
-})();
+// 🔧 File paths
+const inputFilePath = path.join(__dirname, 'data', 'podcasts.txt');
+const chunksFilePath = path.join(__dirname, 'data', 'chunks.json');
+const embeddingsFilePath = path.join(__dirname, 'data', 'embeddings.json');
+
+// 📖 Read and process the file
+fs.readFile(inputFilePath, 'utf8', async (err, data) => {
+  if (err) return console.error('❌ Error reading file:', err);
+
+  const chunks = cleanAndChunkText(data);
+  fs.writeFileSync(chunksFilePath, JSON.stringify(chunks, null, 2));
+  console.log(`✅ Wrote ${chunks.length} chunks to ${chunksFilePath}`);
+
+  // 🧠 Load embedding model from @xenova/transformers
+  const { pipeline } = await import('@xenova/transformers');
+  const embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+
+  const embeddings = [];
+  for (const chunk of chunks) {
+    const output = await embedder(chunk, { pooling: 'mean', normalize: true });
+    embeddings.push(output.data);
+  }
+
+  fs.writeFileSync(embeddingsFilePath, JSON.stringify(embeddings, null, 2));
+  console.log(`✅ Saved ${embeddings.length} embeddings to ${embeddingsFilePath}`);
+
+  // 🔍 Sample query + similarity search
+  const query = 'how to write a good cold email';
+  const queryEmbedding = (await embedder(query, {
+    pooling: 'mean',
+    normalize: true,
+  })).data;
+
+  const results = chunks.map((chunk, i) => ({
+    chunk,
+    score: cosineSimilarity(queryEmbedding, embeddings[i]),
+  }));
+
+  results.sort((a, b) => b.score - a.score);
+  console.log('\n🔎 Top 3 matching chunks:\n');
+  //console.log(results.slice(0, 3));
+
+  console.log('\n📚 Pretty Results:\n');
+
+  results.slice(0, 3).forEach((result, i) => {
+    console.log(`🔹 Result ${i + 1}`);
+    console.log(`📈 Score: ${result.score.toFixed(4)}`);
+    console.log(`📝 Chunk: ${result.chunk.slice(0, 300)}...`); // Limit to 300 chars
+    console.log('='.repeat(80)); // Divider
+  });
+});
