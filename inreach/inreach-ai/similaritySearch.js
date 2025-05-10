@@ -8,9 +8,7 @@ const readline = require('readline');
 const chunksPath = path.join(__dirname, 'data', 'chunks.json');
 const chunks = JSON.parse(fs.readFileSync(chunksPath, 'utf8'));
 
-/**
- * 🧠 Compute cosine similarity between two vectors
- */
+
 function cosineSimilarity(vecA, vecB) {
   const dot = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
   const normA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
@@ -18,18 +16,14 @@ function cosineSimilarity(vecA, vecB) {
   return dot / (normA * normB);
 }
 
-/**
- * 🧮 Embed chunks and store embeddings in memory
- */
+
 async function embedChunks(model, chunks) {
   const texts = chunks.map(chunk => chunk.chunk || chunk); // If plain strings or objects
   const embeddingsTensor = await model.embed(texts);
   return embeddingsTensor.array();
 }
 
-/**
- * 🔍 Perform semantic search on user query
- */
+
 async function semanticSearch(query, chunkEmbeddings, chunks, model) {
   const queryEmbedding = await model.embed([query]);
   const queryVec = (await queryEmbedding.array())[0];
@@ -42,14 +36,11 @@ async function semanticSearch(query, chunkEmbeddings, chunks, model) {
     };
   });
 
-  // 📈 Sort by score descending
   const topChunks = scoredChunks.sort((a, b) => b.score - a.score).slice(0, 3);
   return topChunks;
 }
 
-/**
- * 💬 CLI prompt for search
- */
+
 function promptQuery(callback) {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -62,9 +53,7 @@ function promptQuery(callback) {
   });
 }
 
-/**
- * 🚀 Main function
- */
+
 (async () => {
   const model = await use.load();
   console.log('✅ USE model loaded...');
