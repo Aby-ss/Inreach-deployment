@@ -1,18 +1,18 @@
 Main Website/Landing Page Development:
           ☐ Finalise all Landing Page Sections
-                    ☐ Landing Page
-                    ☐ Features Section
-                    ☐ How it Works Section
-                    ☐ Footer Section
+                    ✔ Landing Page
+                    ✔ Features Section
+                    ✔ How it Works Section
+                    ✔ Footer Section
           ☐ Start Website Development
 
 Custom-GPT Development:
           ✔ Collect and clean email/podcast copy data
-          ☐ Chunk text into usable formats  
-          ☐ Vectorize data with embeddings  
-          ☐ Store vectors in ChromaDB/Pinecone  
-          ☐ Build similarity search function  
-          ☐ Setup LLMChain or RetrievalQA  
+          ✔ Chunk text into usable formats
+          ✔ Vectorize data with embeddings
+          ✔ Store vectors in ChromaDB/Pinecone
+          ✔ Build similarity search function
+          ✔ Setup LLMChain or RetrievalQA
           ☐ Tune system prompt and outputs
 
 App Development:
