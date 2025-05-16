@@ -1,72 +1,140 @@
 const fs = require('fs');
 const path = require('path');
-const use = require('@tensorflow-models/universal-sentence-encoder');
-const tf = require('@tensorflow/tfjs-node');
-const readline = require('readline');
+const axios = require('axios');
+const readline = require('readline-sync');
 
-// 📂 Load chunks from file
-const chunksPath = path.join(__dirname, 'data', 'chunks.json');
-const chunks = JSON.parse(fs.readFileSync(chunksPath, 'utf8'));
+const cosineSimilarity = (a, b) => {
+  const dot = a.reduce((sum, ai, i) => sum + ai * b[i], 0);
+  const magA = Math.sqrt(a.reduce((sum, ai) => sum + ai * ai, 0));
+  const magB = Math.sqrt(b.reduce((sum, bi) => sum + bi * bi, 0));
+  return dot / (magA * magB);
+};
 
+const CHUNKS_FILE = path.join(__dirname, 'data', 'chunks.json');
+const NOTES_DIR = path.join(__dirname, 'data');
 
-function cosineSimilarity(vecA, vecB) {
-  const dot = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
-  const normA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
-  const normB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0));
-  return dot / (normA * normB);
-}
-
-
-async function embedChunks(model, chunks) {
-  const texts = chunks.map(chunk => chunk.chunk || chunk); // If plain strings or objects
-  const embeddingsTensor = await model.embed(texts);
-  return embeddingsTensor.array();
-}
-
-
-async function semanticSearch(query, chunkEmbeddings, chunks, model) {
-  const queryEmbedding = await model.embed([query]);
-  const queryVec = (await queryEmbedding.array())[0];
-
-  // 🧠 Calculate similarity for each chunk
-  const scoredChunks = chunkEmbeddings.map((embedding, index) => {
-    return {
-      chunk: chunks[index].chunk || chunks[index],
-      score: cosineSimilarity(queryVec, embedding)
-    };
+/**
+ * 🧠 Embed query using Ollama
+ */
+async function embedText(text) {
+  const res = await axios.post('http://localhost:11434/api/embeddings', {
+    model: 'nomic-embed-text',
+    prompt: text,
   });
 
-  const topChunks = scoredChunks.sort((a, b) => b.score - a.score).slice(0, 3);
-  return topChunks;
+  return res.data.embedding;
 }
 
+/**
+ * 🧩 Get relevant chunks via cosine similarity
+ */
+async function getRelevantChunks(query, topK = 3) {
+  const queryEmbedding = await embedText(query);
+  const data = JSON.parse(fs.readFileSync(CHUNKS_FILE, 'utf8'));
 
-function promptQuery(callback) {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
+  const scored = data.map(item => ({
+    chunk: item.chunk,
+    score: cosineSimilarity(queryEmbedding, item.embedding),
+  }));
 
-  rl.question('🔍 Enter your search query: ', async (query) => {
-    await callback(query);
-    rl.close();
-  });
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK)
+    .map(item => item.chunk);
 }
 
+/**
+ * 📚 Load podcast notes from .txt files
+ */
+function loadPodcastNotes() {
+  if (!fs.existsSync(NOTES_DIR)) return '';
 
-(async () => {
-  const model = await use.load();
-  console.log('✅ USE model loaded...');
+  const files = fs.readdirSync(NOTES_DIR).filter(f => f.endsWith('.txt'));
+  let combined = '';
 
-  console.log('📊 Embedding all chunks...');
-  const chunkEmbeddings = await embedChunks(model, chunks);
+  for (const file of files) {
+    const content = fs.readFileSync(path.join(NOTES_DIR, file), 'utf8');
+    combined += `--- ${file} ---\n${content}\n\n`;
+  }
 
-  promptQuery(async (query) => {
-    console.log('\n🔎 Searching for:', query);
-    const results = await semanticSearch(query, chunkEmbeddings, chunks, model);
+  return combined.trim();
+}
 
-    results.forEach((res, i) => {
-      console.log(`\n#${i + 1} (Score: ${res.score.toFixed(4)})\n${res.chunk.slice(0, 500)}...`);
+/**
+ * 🤖 Query the LLM (e.g., mistral)
+ */
+async function queryLLM(prompt) {
+  try {
+    const res = await axios.post('http://localhost:11434/api/generate', {
+      model: 'mistral',
+      prompt,
+      stream: false,
     });
-  });
-})();
+
+    return res.data.response;
+  } catch (err) {
+    console.error('❌ LLM error:', err.message);
+    return '';
+  }
+}
+
+/**
+ * ✅ Check for cold email factors in the response
+ */
+function evaluateResponseFactors(response) {
+  const checks = {
+    intent: /intent|goal|objective|reason/i.test(response),
+    personalization: /you|your team|congrats|noticed|saw|read/i.test(response),
+    value: /benefit|value|help you|growth|increase|reduce|results/i.test(response),
+    cta: /schedule|call|chat|book|reply|interested|connect/i.test(response),
+    prospectCentric: /you|your|team|business|company/i.test(response) && !/we|our|my company/i.test(response)
+  };
+
+  console.log('📋 Quality Factor Checklist:\n');
+  console.log(`🎯 Intent Present: ${checks.intent ? '✅' : '❌'}`);
+  console.log(`📌 Personalized: ${checks.personalization ? '✅' : '❌'}`);
+  console.log(`💥 Value-Centric: ${checks.value ? '✅' : '❌'}`);
+  console.log(`🚀 Has CTA: ${checks.cta ? '✅' : '❌'}`);
+  console.log(`🔍 Prospect-Focused: ${checks.prospectCentric ? '✅' : '❌'}`);
+  console.log('\n' + '='.repeat(60) + '\n');
+}
+
+/**
+ * 🧠 Main assistant
+ */
+async function runAssistant() {
+  const query = readline.question('💬 What do you want help with?\n> ');
+  const responses = readline.questionInt('🔁 How many responses would you like?\n> ');
+
+  const podcastNotes = loadPodcastNotes();
+  const relevantChunks = await getRelevantChunks(query);
+  const context = relevantChunks.join('\n\n');
+
+  const finalPrompt = `
+You are an expert cold email strategist. Use the podcast notes and chunks below to answer the user’s question.
+
+📚 Podcast Notes:
+${podcastNotes || 'No notes found.'}
+
+🧩 Chunks:
+${context}
+
+❓ Question:
+${query}
+`;
+
+  console.log('\n🤖 Thinking...\n');
+
+  for (let i = 1; i <= responses; i++) {
+    console.log(`🧠 Response ${i}:\n`);
+    const output = await queryLLM(finalPrompt);
+    console.log(output);
+
+    // 🧾 Evaluate cold email quality factors
+    evaluateResponseFactors(output);
+
+    console.log('-'.repeat(60) + '\n');
+  }
+}
+
+runAssistant();

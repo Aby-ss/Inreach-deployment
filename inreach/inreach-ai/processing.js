@@ -1,8 +1,9 @@
 const fs = require('fs');
 const path = require('path');
+const axios = require('axios');
 
 /**
- * Clean and chunk text intelligently for vectorization.
+ * ✂️ Clean and chunk text with overlap for vectorization
  */
 function cleanAndChunkText(text, chunkSize = 1000, overlap = 200) {
   const cleanedText = text.replace(/\s+/g, ' ').trim();
@@ -20,7 +21,7 @@ function cleanAndChunkText(text, chunkSize = 1000, overlap = 200) {
 }
 
 /**
- * Compute cosine similarity between two vectors.
+ * 📐 Compute cosine similarity between two vectors
  */
 function cosineSimilarity(vecA, vecB) {
   const dot = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
@@ -29,54 +30,38 @@ function cosineSimilarity(vecA, vecB) {
   return dot / (magA * magB);
 }
 
-// 🔧 File paths
+/**
+ * 🧠 Embed text using Ollama's /api/embeddings
+ */
+async function embedText(text) {
+  const res = await axios.post('http://localhost:11434/api/embeddings', {
+    model: 'nomic-embed-text',
+    prompt: text,
+  });
+
+  return res.data.embedding;
+}
+
+// 🛠️ File paths
 const inputFilePath = path.join(__dirname, 'data', 'podcasts.txt');
 const chunksFilePath = path.join(__dirname, 'data', 'chunks.json');
-const embeddingsFilePath = path.join(__dirname, 'data', 'embeddings.json');
 
-// 📖 Read and process the file
-fs.readFile(inputFilePath, 'utf8', async (err, data) => {
-  if (err) return console.error('❌ Error reading file:', err);
-
-  const chunks = cleanAndChunkText(data);
-  fs.writeFileSync(chunksFilePath, JSON.stringify(chunks, null, 2));
-  console.log(`✅ Wrote ${chunks.length} chunks to ${chunksFilePath}`);
-
-  // 🧠 Load embedding model from @xenova/transformers
-  const { pipeline } = await import('@xenova/transformers');
-  const embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
-
-  const embeddings = [];
-  for (const chunk of chunks) {
-    const output = await embedder(chunk, { pooling: 'mean', normalize: true });
-    embeddings.push(output.data);
+// 🚀 Main
+(async () => {
+  if (!fs.existsSync(inputFilePath)) {
+    console.error('❌ Input file not found.');
+    return;
   }
 
-  fs.writeFileSync(embeddingsFilePath, JSON.stringify(embeddings, null, 2));
-  console.log(`✅ Saved ${embeddings.length} embeddings to ${embeddingsFilePath}`);
+  const data = fs.readFileSync(inputFilePath, 'utf8');
+  const chunks = cleanAndChunkText(data);
+  const results = [];
 
-  // 🔍 Sample query + similarity search
-  const query = 'how to write a good cold email';
-  const queryEmbedding = (await embedder(query, {
-    pooling: 'mean',
-    normalize: true,
-  })).data;
+  for (const chunk of chunks) {
+    const embedding = await embedText(chunk);
+    results.push({ chunk, embedding });
+  }
 
-  const results = chunks.map((chunk, i) => ({
-    chunk,
-    score: cosineSimilarity(queryEmbedding, embeddings[i]),
-  }));
-
-  results.sort((a, b) => b.score - a.score);
-  console.log('\n🔎 Top 3 matching chunks:\n');
-  //console.log(results.slice(0, 3));
-
-  console.log('\n📚 Pretty Results:\n');
-
-  results.slice(0, 3).forEach((result, i) => {
-    console.log(`🔹 Result ${i + 1}`);
-    console.log(`📈 Score: ${result.score.toFixed(4)}`);
-    console.log(`📝 Chunk: ${result.chunk.slice(0, 300)}...`); // Limit to 300 chars
-    console.log('='.repeat(80)); // Divider
-  });
-});
+  fs.writeFileSync(chunksFilePath, JSON.stringify(results, null, 2));
+  console.log(`✅ Saved ${results.length} embedded chunks to ${chunksFilePath}`);
+})();
