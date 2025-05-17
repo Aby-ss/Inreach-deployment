@@ -1,10 +1,15 @@
 Main Website/Landing Page Development:
-          ☐ Finalise all Landing Page Sections
+          ✔ Finalise all Landing Page Sections
                     ✔ Landing Page
                     ✔ Features Section
                     ✔ How it Works Section
                     ✔ Footer Section
           ☐ Start Website Development
+                    ☐ Landing Page Code
+                    ☐ Features Section Code
+                    ☐ How it Works Section Code
+                    ☐ Footer Section Code
+                    ☐ Responsive Design Integration
 
 Custom-GPT Development:
           ✔ Collect and clean email/podcast copy data
@@ -13,7 +18,7 @@ Custom-GPT Development:
           ✔ Store vectors in ChromaDB/Pinecone
           ✔ Build similarity search function
           ✔ Setup LLMChain or RetrievalQA
-          ☐ Tune system prompt and outputs
+          ✔ Tune system prompt and outputs
 
 App Development:
           ✔ Add file uploader/drag and drop div to main app page
