@@ -78,22 +78,30 @@ async function runAssistant() {
   const query = readline.question('💬 What do you want help with?\n> ');
   const numResponses = readline.questionInt('🔁 How many responses would you like?\n> ');
 
+  // 🌐 Ask for business-related context
+  const businessContext = readline.question(
+    '\n📌 Optional: Tell me about your business, audience, tone, product, or anything that might help personalize the response.\n> '
+  );
+
   const podcastNotes = loadPodcastNotes();
   const relevantChunks = await getRelevantChunks(query);
   const context = relevantChunks.join('\n\n');
 
   const finalPrompt = `
-You are an expert cold email strategist. Use the podcast notes and document context below to answer the user’s question.
+  You are an expert cold email strategist. Use the podcast notes, business context, and relevant chunks below to answer the user’s question. Make sure the email is short and to the point, the very first paragraph or few sentences should be the hook that grabs attention. And use no emojis.
 
-📚 Podcast Notes:
-${podcastNotes || 'No notes found in folder.'}
+  📌 Business Context:
+  ${businessContext || 'No additional info provided.'}
 
-🧩 Related Document Chunks:
-${context}
+  📚 Podcast Notes:
+  ${podcastNotes || 'No notes found in folder.'}
 
-❓ Question:
-${query}
-`;
+  🧩 Related Document Chunks:
+  ${context}
+
+  ❓ Question:
+  ${query}
+  `;
 
   console.log('\n🤖 Thinking...\n');
 
