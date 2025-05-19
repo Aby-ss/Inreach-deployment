@@ -14,12 +14,12 @@ export default function Home() {
       />
 
       {/* 🔵 Sticky Full-Width Navbar */}
-      <nav className="bg-[#2B2D42] text-white py-4 px-6 sticky top-5 z-50 shadow-md rounded-full mx-4">
+      <nav className="bg-[#2B2D42] text-white py-3 px-6 sticky top-5 z-50 shadow-md rounded-full mx-6">
         <div className="max-w-[1440px] mx-auto flex justify-between items-center">
           
           {/* 🔹 Logo */}
           <div className="flex items-center">
-            <img src="logo.png" alt="Logo" className="h-10 w-auto" />
+            <img src="logo.png" alt="Logo" className="h-7 w-auto" />
           </div>
 
           {/* 🔹 Center Nav Links (Desktop) */}
@@ -32,9 +32,9 @@ export default function Home() {
           </div>
 
           {/* 🔹 Buttons (Desktop) */}
-          <div className="hidden sm:flex gap-4 items-center">
-            <button className="text-base text-white hover:underline">Login</button>
-            <button className="bg-[#686AF1] text-white px-6 py-2 rounded-full text-base">
+          <div className="hidden sm:flex gap-7 items-center">
+            <button className="text-base text-white gabarito-semibold tracking-tight">Login</button>
+            <button className="bg-[#686AF1] text-white px-6 py-3 rounded-full gabarito-semibold tracking-tight">
               Get Started
             </button>
           </div>
@@ -104,7 +104,70 @@ export default function Home() {
           </div>
         </section>
 
-        
+        <section className="relative flex justify-center w-full mt-30">
+          <div
+            className="flex flex-col items-center gap-4 mt-10 max-w-4xl w-full px-4 z-10 text-black text-center"
+            id="hero-content"
+          >
+            {/* Features Section */}
+          <h1 className="gabarito-semibold tracking-tighter w-[1000px] text-4xl sm:text-5xl md:text-6xl">
+            Smarter Cold Outreach, On <span className="relative inline-block underline-custom">Autopilot</span>
+          </h1>
+
+          <h2 className="gabarito-medium tracking-tight mt-2 text-lg sm:text-xl max-w-[780px] leading-6">
+            Handle outreach like a team of five—generate custom pitches, upload your contacts, and start sending in minutes. Perfect for solo founders who want results without the overhead
+          </h2>
+
+          <div className="flex justify-center w-full py-16">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-110 px-4 w-full max-w-[1800px] mx-auto justify-items-center">
+              
+              <div className="bg-[#FEFEFE] border border-[#E0E3E2] rounded-xl p-7 pt-16 flex flex-col gap-4 w-full min-w-[420px] shadow-xs">
+                <img
+                  src="/note.png"
+                  alt="AI Assistant"
+                  className="w-8 h-8 object-cover"
+                />
+                <h1 className="text-xl tracking-tight gabarito-medium font-semibold text-left text-black">
+                  Personalisation That Persuades
+                </h1>
+                <p className="text-[15.5px] leading-6 text-left tracking-tight gabarito-medium max-w-[550px]">
+                  Craft high-converting pitches with AI that understands your goals and mirrors proven outreach strategies—so every message feels personal, polished, and on point
+                </p>
+              </div>
+
+              <div className="bg-[#FEFEFE] border border-[#E0E3E2] rounded-xl p-7 pt-16 flex flex-col gap-4 w-full min-w-[420px] shadow-xs">
+                <img
+                  src="/chip.png"
+                  alt="Automation Engine"
+                  className="w-8 h-8 object-cover"
+                />
+                <h1 className="text-xl tracking-tight gabarito-medium font-semibold text-left text-black">
+                  Automated Outreach
+                </h1>
+                <p className="text-[15.5px] leading-6 text-left tracking-tight gabarito-medium max-w-[550px]">
+                  Upload a contact list, write a single prompt, and let the system handle the delivery—every email sent, tracked, and optimized with zero manual effort
+                </p>
+              </div>
+
+              <div className="bg-[#FEFEFE] border border-[#E0E3E2] rounded-xl p-7 pt-16 flex flex-col gap-4 w-full min-w-[420px] shadow-xs">
+                <img
+                  src="/time.png"
+                  alt="Analytics Dashboard"
+                  className="w-8 h-8 object-cover"
+                />
+                <h1 className="text-xl tracking-tight gabarito-medium font-semibold text-left text-black">
+                  Save Hours, Scale Faster
+                </h1>
+                <p className="text-[15.5px] leading-6 text-left tracking-tight gabarito-medium max-w-[550px]">
+                  Stop wasting time on repetitive tasks. Launch scalable campaigns in minutes and refocus your energy on building relationships and growing your business
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+          </div>
+        </section>
       </main>
 
     </>

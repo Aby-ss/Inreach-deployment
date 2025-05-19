@@ -19,6 +19,21 @@
   }
 }
 
+@layer components {
+  .underline-custom::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -2px; /* slight space from text */
+    width: 100%;
+    height: 10px; /* 🔵 thicker underline */
+    background-color: #686AF1; /* 🎨 your custom color */
+    transform: rotate(0.5deg); /* 🔁 slight tilt */
+    z-index: -1;
+    border-radius: 2px;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
