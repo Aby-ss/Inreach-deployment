@@ -3,10 +3,10 @@ An AI tool that writes and sends custom email pitches for faster, smarter outrea
 
 ## How It Works
 
-1. Enter a prompt explaining what the business does and what It wants to accomplish from the email marketing
-2. Select marketing copies that the user likes and resonates with
-3a. Enter an excel sheet or csv list containing contact info and list of emails or other personal contact details
-3b. Enter a list of websites or links that the user would want scrapped and use those contacts scrapped to send emails or messages
+1a. Enter an excel sheet or csv list containing contact info and list of emails or other personal contact details
+1b. Enter a list of websites or links that the user would want scrapped and use those contacts scrapped to send emails or messages
+2. Enter a prompt explaining what the business does and what It wants to accomplish from the email marketing
+3. Select marketing copies that the user likes and resonates with
 4. Using an SMTP (or later Gmail/MailJet OAuth) start sending emails to the contacts and keep track of any emails that were failed to be sent
 
 ## Content Upload
