@@ -3,8 +3,10 @@
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import Papa from "papaparse";
+import { useRef, useEffect } from "react";
 
 export default function Home() {
+
   const [uploadedFileName, setUploadedFileName] = useState(null);
   const [previewData, setPreviewData] = useState([]);
   const [columns, setColumns] = useState({});
@@ -22,6 +24,24 @@ export default function Home() {
     if (/https?:\/\/|www\.[\w.-]+\.\w{2,}/.test(joined)) return "Website";
     if (/name|company|prospect/.test(header.toLowerCase())) return "Name";
     return "Unknown";
+  };
+
+  const [text, setText] = useState("");
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    // Auto-expand the textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
+    }
+  }, [text]);
+
+  const handleChange = (e) => {
+    const words = e.target.value.trim().split(/\s+/);
+    if (words.length <= 150) {
+      setText(e.target.value);
+    }
   };
 
   const getColumnIndexes = (columns, headers) => {
@@ -93,94 +113,107 @@ export default function Home() {
     console.log("🛠️ Final manual column indexes map:", map);
   };
 
+  const handleGenerateCopies = () => {}
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-8 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+    <div className="flex flex-col items-center justify-center min-h-screen p-8 sm:p-20">
       <main className="flex flex-col gap-8 items-center w-full">
-        <h1 className="gabarito-semibold tracking-tighter text-6xl text-center max-w-[900px]">
+        <h1 className="gabarito-semibold tracking-tighter text-7xl text-center max-w-[950px]">
           Upload the contact spreadsheet
         </h1>
 
         <div
           {...getRootProps()}
-          className="w-[500px] h-20 border-2 border-dashed border-gray-400 rounded-xl flex items-center justify-center text-gray-600 cursor-pointer hover:border-blue-500 transition text-center"
+          className="w-[500px] h-20 border-4 text-xl border-dashed border-gray-400 gabarito-medium rounded-xl flex items-center justify-center text-[#AEAEAE] cursor-pointer hover:border-[#686AF1] transition text-center"
         >
           <input {...getInputProps()} />
           {isDragActive ? (
             <p>Drop the file here...</p>
           ) : (
-            <p>Drag and drop a CSV file here, or click to select</p>
+            <p>Drag & Drag a CSV File or Click to Choose</p>
           )}
         </div>
 
         {uploadedFileName && (
-          <p className="text-green-600 font-medium">
+          <p className="text-green-600 gabarito-medium">
             ✅ File uploaded: <span className="gabarito-semibold text-lg">{uploadedFileName}</span>
           </p>
         )}
 
         {previewData.length > 0 && (
-          <div className="relative w-full max-w-5xl overflow-hidden rounded-xl border border-gray-300 shadow-md mt-8">
+          <div className="relative w-full max-w-5xl overflow-hidden rounded-xl border border-gray-300 shadow-sm mt-8 bg-[#FEFEFE]">
             <table className="w-full table-auto border-collapse">
-              <thead className="bg-gray-100 text-left">
+              <thead>
                 <tr>
                   {Object.keys(previewData[0]).map((key, i) => (
-                    <th key={i} className="p-3 border-b text-sm font-semibold">{key}</th>
+                    <th
+                      key={i}
+                      className="p-2 border-b text-xl gabarito-semibold tracking-tight text-left text-black"
+                    >
+                      {key}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {previewData.map((row, i) => (
-                  <tr key={i} className="even:bg-gray-50">
+                  <tr key={i}>
                     {Object.values(row).map((value, j) => (
-                      <td key={j} className="p-3 border-b text-sm truncate max-w-[200px]">{value}</td>
+                      <td
+                        key={j}
+                        className="p-2 text-lg gabarito-medium tracking-tighter text-[#BEBEBE] text-left truncate max-w-[200px]"
+                      >
+                        {value}
+                      </td>
                     ))}
                   </tr>
                 ))}
               </tbody>
             </table>
-            <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-[#FEFEFE] to-transparent pointer-events-none" />
           </div>
         )}
 
+
         {previewData.length > 0 && !manualMode && (
-          <><div className="mt-8 w-full max-w-4xl border border-gray-300 rounded-xl p-6 bg-white shadow-md">
-            <h2 className="text-xl font-semibold mb-4">🔍 Auto-detected column types</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <>
+            <div className="mt-8 space-y-3">
               {Object.entries(columns).map(([header, type], i) => (
-                <div
-                  key={i}
-                  className="border border-gray-200 rounded-lg p-4 bg-gray-50 flex flex-col gap-1"
-                >
-                  <p className="text-sm font-semibold text-gray-700">📁 <span className="underline">{header}</span></p>
-                  <p className="text-sm text-blue-700">➡️ Detected as: <span className="font-medium">{type}</span></p>
+                <div key={i} className="flex items-center gap-3">
+                  <img src="/GreenTick.png" alt="check" className="w-9 h-auto mt-1" />
+                  <p className="text-black text-xl gabarito-semibold">
+                    Column {i + 1} detected as: <em>{type}</em> (<span className="font-medium">{header}</span>)
+                  </p>
                 </div>
               ))}
             </div>
-          </div><div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+
+            <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={handleAcceptColumns}
-                className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition"
+                className="bg-[#00D091] text-white px-6 py-3 rounded-full hover:bg-[#00C187] transition gabarito-medium"
               >
-                ✅ Column detection is accurate
+                Accurate Detection
               </button>
               <button
                 onClick={handleManualInput}
-                className="bg-gray-200 text-gray-800 px-6 py-3 rounded-xl hover:bg-gray-300 transition"
+                className="bg-gray-200 text-gray-800 px-6 py-3 rounded-full hover:bg-gray-300 transition gabarito-medium"
               >
-                🛠️ Manually define columns
+                Manually Define
               </button>
-            </div></>
+            </div>
+          </>
         )}
 
         {manualMode && (
           <div className="mt-8 max-w-4xl w-full">
-            <h2 className="text-xl font-semibold mb-4">🛠️ Select column types manually</h2>
+            <h2 className="text-xl tracking-tight gabarito-semibold mb-4">Select column types manually</h2>
             {Object.keys(columns).map((header, i) => (
-              <div key={i} className="mb-3 p-4 bg-gray-50 border rounded-md flex flex-col gap-2">
-                <p className="font-medium">{header}</p>
-                <div className="flex gap-4 flex-wrap">
+              <div key={i} className="mb-3 p-4 bg-gray-50 border rounded-xl flex flex-col gap-2">
+                <p className="tracking-tight gabarito-medium">{header}</p>
+                <div className="flex gap-4 flex-wrap gabarito-medium">
                   {["Email", "LinkedIn", "Instagram", "Facebook", "Website", "Name"].map((type) => (
-                    <label key={type} className="flex items-center gap-2">
+                    <label key={type} className="flex items-center gap-2 gabarito-medium">
                       <input
                         type="checkbox"
                         checked={columns[header] === type}
@@ -196,13 +229,40 @@ export default function Home() {
             <div className="mt-6 flex justify-center">
               <button
                 onClick={handleConfirmManual}
-                className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition"
+                className="gabarito-medium bg-[#00D091] text-white text-xl px-6 py-3 rounded-full hover:bg-[#00C187] transition"
               >
-                ✅ Confirm column selection
+                Confirm column selection
               </button>
             </div>
           </div>
         )}
+
+        {uploadedFileName && (
+          <div className="px-6 py-10">
+            <h1 className="gabarito-semibold tracking-tighter text-7xl max-w-[950px] text-left">
+              Explain your business briefly
+            </h1>
+
+            <textarea
+              ref={textareaRef}
+              className="mt-6 w-full max-w-[950px] bg-[#FEFEFE] border border-[#CDCDCD] rounded-lg p-4 text-base gabarito-medium text-[#C0C0C0] resize-none overflow-hidden"
+              rows={1}
+              value={text}
+              placeholder="I run a marketing agency targeting small software business ..."
+              onChange={handleChange}
+            />
+
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={handleGenerateCopies}
+                className="gabarito-semibold bg-[#00D091] text-white text-2xl px-6 py-3 rounded-full hover:bg-[#00C187] transition"
+              >
+                Generate Copies
+              </button>
+            </div>
+          </div>
+        )}
+
       </main>
     </div>
   );
