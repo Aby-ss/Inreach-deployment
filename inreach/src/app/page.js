@@ -168,6 +168,36 @@ export default function Home() {
 
           </div>
         </section>
+
+        <section className="w-full flex justify-center items-center py-20 px-4">
+          <div className="max-w-7xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            {/* 🔵 Video Box */}
+            <div className="rounded-xl overflow-hidden shadow-lg w-full h-[300px] md:h-[500px]">
+              <video
+                className="w-full h-full object-cover"
+                controls
+                controlsList="nodownload nofullscreen noremoteplayback"
+                disablePictureInPicture
+              >
+                <source src="/demo.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+
+            {/* 📝 Text Content */}
+            <div className="text-left">
+              <h1 className="text-3xl md:text-6xl gabarito-semibold tracking-tighter text-[#1A1A1A] mb-4 w-[800px]">
+                Turn Words Into <br/>  <span className="bg-[#00D091] px-2 -rotate-1 inline-block"><span className="text-white">Winning Emails</span></span> in Seconds
+              </h1>
+              <h3 className="text-lg md:text-lg gabarito-medium tracking-tight text-[#555] mt-15">
+                <span className="text-black text-xl">1. Drag, Drop & Auto-Detect Contacts</span> <br/> <span className="leading-5">Upload your contact list in seconds — our smart importer instantly detects names, emails, and websites, so you can skip the manual setup and jump straight into outreach</span> <br/> <br/>
+                <span className="text-black text-xl">2. Generate AI-Written Pitches That Convert</span> <br/> <span className="leading-5">Craft persuasive, professional-grade email pitches with just a prompt — built on expert-backed strategies and refined for conversion</span> <br/> <br/>
+                <span className="text-black text-xl">3. Automate Campaign Launch & Email Tracking</span> <br/> <span className="leading-5">Launch your campaign with one click — emails are sent, tracked, and logged automatically, letting you scale without lifting a finger</span> <br/>
+              </h3>
+            </div>
+
+          </div>
+        </section>
       </main>
 
     </>
