@@ -8,12 +8,7 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
     <>
-      
-      <div className="absolute w-[95vw] h-[85vh] bg-cover bg-center bg-no-repeat rounded-2xl z-0 left-1/2 transform -translate-x-1/2 mb-[-50px]"
-        style={{ backgroundImage: "url('/background.png')" }}
-      />
 
-      {/* 🔵 Sticky Full-Width Navbar */}
       <nav className="bg-[#2B2D42] text-white py-3 px-6 sticky top-5 z-50 shadow-md rounded-full mx-6">
         <div className="max-w-[1440px] mx-auto flex justify-between items-center">
           
@@ -22,7 +17,6 @@ export default function Home() {
             <img src="logo.png" alt="Logo" className="h-7 w-auto" />
           </div>
 
-          {/* 🔹 Center Nav Links (Desktop) */}
           <div className="hidden sm:flex text-xl gap-8 items-center text-base font-medium">
             <Link href="#home" className="gabarito-medium tracking-[-0.020em]">Home</Link>
             <Link href="#pricing" className="gabarito-medium tracking-[-0.020em]">Pricing</Link>
@@ -33,7 +27,6 @@ export default function Home() {
 
           {/* 🔹 Buttons (Desktop) */}
           <div className="hidden sm:flex gap-7 items-center">
-            <button className="text-base text-white gabarito-semibold tracking-tight">Login</button>
             <button className="bg-[#686AF1] text-white px-6 py-3 rounded-full gabarito-semibold tracking-tight">
               Get Started
             </button>
@@ -52,7 +45,6 @@ export default function Home() {
 
       <div className={`fixed top-0 left-0 h-full w-full bg-white shadow-lg z-50 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
         
-        {/* 🧭 Header */}
         <div className="flex justify-between items-center p-4 border-b">
           <span className="text-2xl font-bold text-[#2B2D42]">Menu</span>
           <button onClick={() => setSidebarOpen(false)}>
@@ -75,6 +67,15 @@ export default function Home() {
       <main className="flex flex-col gap-[32px] row-start-2 items-center">
         {/* Landing Page Section */}
         <section className="relative flex justify-center w-full mt-30">
+
+          <div className="absolute left-10 top-30 z-0 w-32 sm:w-40 md:w-52 lg:w-84">
+            <img src="LeftWidgets.png" className="w-full h-auto" />
+          </div>
+
+          <div className="absolute right-20 top-50 z-0 w-24 sm:w-36 md:w-48 lg:w-70">
+            <img src="RightWidgets.png" className="w-full h-auto" />
+          </div>
+
           <div
             className="flex flex-col items-center gap-4 mt-10 max-w-4xl w-full px-4 z-10 text-black text-center"
             id="hero-content"
@@ -104,6 +105,7 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Features Section */}
         <section className="relative flex justify-center w-full mt-30">
           <div
             className="flex flex-col items-center gap-4 mt-10 max-w-4xl w-full px-4 z-10 text-black text-center"
@@ -169,9 +171,10 @@ export default function Home() {
           </div>
         </section>
 
+        {/* How it Works Section */}
         <section className="w-full flex justify-center items-center py-20 px-4">
           <div className="max-w-7xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            {/* 🔵 Video Box */}
+
             <div className="rounded-xl overflow-hidden shadow-lg w-full h-[300px] md:h-[500px]">
               <video
                 className="w-full h-full object-cover"
@@ -184,7 +187,6 @@ export default function Home() {
               </video>
             </div>
 
-            {/* 📝 Text Content */}
             <div className="text-left">
               <h1 className="text-3xl md:text-6xl gabarito-semibold tracking-tighter text-[#1A1A1A] mb-4 w-[800px]">
                 Turn Words Into <br/>  <span className="bg-[#00D091] px-2 -rotate-1 inline-block"><span className="text-white">Winning Emails</span></span> in Seconds
@@ -198,6 +200,44 @@ export default function Home() {
 
           </div>
         </section>
+
+        {/* Footer Section */}
+        <footer className="bg-[#f2f2f2] py-12 px-6 w-screen">
+          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-start gap-10">
+            
+            {/* Left Side: Image + Text */}
+            <div className="flex flex-col gap-2 max-w-sm">
+              <img src="BlackLogo.png" className="w-28 h-auto mb-2" />
+              <h3 className="text-lg w-[520px] gabarito-medium text-black tracking-tight leading-6">Inreach is a streamlined outreach tool built for solo founders and small teams—generate professional AI-written email pitches and automate delivery, so you can focus on scaling your business, not writing emails</h3>
+              <h2 className="text-2xl tracking-tight w-max gabarito-semibold text-black mt-1">Outreach like a team of ten. Powered by one—You + AI</h2>
+              <h2 className="text-md w-max gabarito-semibold tracking-tight text-black mt-3">Hey there 👋 I’m Rao, the maker of Inreach. Feel free to check out my work over on Twitter</h2>
+            </div>
+
+            {/* Right Side: Two Columns */}
+            <div className="grid grid-cols-2 gap-2 w-full max-w-2xl">
+              {/* Column 1 */}
+              <div>
+                <h1 className="text-lg gabarito-semibold text-black mb-2">Links</h1>
+                <ul className="space-y-1">
+                  <li><a href="#" className="text-gray-600 gabarito-medium hover:underline">Home</a></li>
+                  <li><a href="#" className="text-gray-600 gabarito-medium hover:underline">Features</a></li>
+                  <li><a href="#" className="text-gray-600 gabarito-medium hover:underline">How it Works</a></li>
+                  <li><a href="#" className="text-gray-600 gabarito-medium hover:underline">Support</a></li>
+                </ul>
+              </div>
+
+              {/* Column 2 */}
+              <div>
+                <h1 className="text-lg gabarito-semibold text-black mb-2">More</h1>
+                <ul className="space-y-1">
+                  <li><a href="#" className="text-gray-600 gabarito-medium hover:underline">Follow on Twitter</a></li>
+                  <li><a href="#" className="text-gray-600 gabarito-medium hover:underline">Follow on Instagram</a></li>
+                  <li><a href="#" className="text-gray-600 gabarito-medium hover:underline">Creator</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </footer>
       </main>
 
     </>
