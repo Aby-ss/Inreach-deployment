@@ -367,6 +367,15 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
+
+                <div className="mt-8 flex justify-center">
+                  <button
+                    onClick={() => {}}
+                    className="gabarito-semibold bg-[#00D091] text-white text-2xl px-6 py-3 rounded-full hover:bg-[#00C187] transition-all duration-300 ease-in-out"
+                  >
+                    Send Emails
+                  </button>
+                </div>
               </div>
             )}
           </div>
