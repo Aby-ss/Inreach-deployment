@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import Papa from "papaparse";
 import { useRef, useEffect } from "react";
+import { processAndSendEmails } from './emailService';
 
 export default function Home() {
 
@@ -18,6 +19,8 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [numCopies, setNumCopies] = useState(1);
   const [selectedEmailIndex, setSelectedEmailIndex] = useState(null);
+  const [isSending, setIsSending] = useState(false);
+  const [sendResults, setSendResults] = useState(null);
 
   const textareaRef = useRef(null);
 
@@ -169,6 +172,29 @@ export default function Home() {
       alert("Error generating copies. Please try again.");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSendEmails = async () => {
+    if (selectedEmailIndex === null) {
+      alert("Please select an email template first");
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const results = await processAndSendEmails(previewData, selectedEmailIndex, generatedEmails);
+      setSendResults(results);
+      
+      // Show summary
+      const successCount = results.successful.length;
+      const failCount = results.failed.length;
+      alert(`Email sending complete!\n✅ Successfully sent: ${successCount}\n❌ Failed: ${failCount}`);
+    } catch (error) {
+      console.error('Error sending emails:', error);
+      alert('Error sending emails. Please try again.');
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -370,12 +396,45 @@ export default function Home() {
 
                 <div className="mt-8 flex justify-center">
                   <button
-                    onClick={() => {}}
-                    className="gabarito-semibold bg-[#00D091] text-white text-2xl px-6 py-3 rounded-full hover:bg-[#00C187] transition-all duration-300 ease-in-out"
+                    onClick={handleSendEmails}
+                    disabled={isSending || selectedEmailIndex === null}
+                    className={`gabarito-semibold text-white text-2xl px-6 py-3 rounded-full transition-all duration-300 ease-in-out ${
+                      isSending || selectedEmailIndex === null
+                        ? 'bg-gray-400'
+                        : 'bg-[#00D091] hover:bg-[#00C187]'
+                    }`}
                   >
-                    Send Emails
+                    {isSending ? 'Sending...' : 'Send Emails'}
                   </button>
                 </div>
+
+                {sendResults && (
+                  <div className="mt-8 p-6 bg-white rounded-xl border border-gray-200">
+                    <h3 className="text-xl gabarito-semibold mb-4">Sending Results</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-lg gabarito-medium text-[#00D091]">✅ Successful ({sendResults.successful.length})</h4>
+                        <ul className="mt-2 space-y-2">
+                          {sendResults.successful.map((result, index) => (
+                            <li key={index} className="text-gray-700">
+                              {result.name} ({result.email})
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="text-lg gabarito-medium text-red-500">❌ Failed ({sendResults.failed.length})</h4>
+                        <ul className="mt-2 space-y-2">
+                          {sendResults.failed.map((result, index) => (
+                            <li key={index} className="text-gray-700">
+                              {result.name} - {result.reason}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
