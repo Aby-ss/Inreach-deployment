@@ -13,6 +13,13 @@ export default function Home() {
   const [manualMode, setManualMode] = useState(false);
   const [confirmedManual, setConfirmedManual] = useState(false);
   const [columnIndexMap, setColumnIndexMap] = useState(null);
+  const [text, setText] = useState("");
+  const [generatedEmails, setGeneratedEmails] = useState([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [numCopies, setNumCopies] = useState(1);
+  const [selectedEmailIndex, setSelectedEmailIndex] = useState(null);
+
+  const textareaRef = useRef(null);
 
   const detectColumnType = (header, values) => {
     const joined = values.join(" ").toLowerCase();
@@ -25,9 +32,6 @@ export default function Home() {
     if (/name|company|prospect/.test(header.toLowerCase())) return "Name";
     return "Unknown";
   };
-
-  const [text, setText] = useState("");
-  const textareaRef = useRef(null);
 
   useEffect(() => {
     // Auto-expand the textarea height
@@ -113,7 +117,60 @@ export default function Home() {
     console.log("🛠️ Final manual column indexes map:", map);
   };
 
-  const handleGenerateCopies = () => {}
+  const handleGenerateCopies = async () => {
+    if (!text || !columnIndexMap) {
+      alert("Please provide business context and upload a file first.");
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const newEmails = [];
+      for (let i = 0; i < numCopies; i++) {
+        // Get the business context from the textarea
+        const businessContext = text;
+
+        // Prepare the prompt for the LLM
+        const prompt = `
+          You are an expert cold email strategist. Use the business context below to generate a personalized cold email.
+          Make sure the email is short and to the point, the very first paragraph or few sentences should be the hook that grabs attention.
+          And use no emojis.
+
+          📌 Business Context:
+          ${businessContext}
+
+          Generate a cold email that:
+          1. Has a strong hook in the first few sentences
+          2. Is personalized to the recipient
+          3. Is concise and to the point
+          4. Has a clear call to action
+        `;
+
+        // Call the local Ollama LLM
+        const response = await fetch('http://localhost:11434/api/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'mistral',
+            prompt: prompt,
+            stream: false,
+          }),
+        });
+
+        const data = await response.json();
+        newEmails.push(data.response);
+      }
+      
+      setGeneratedEmails(prev => [...prev, ...newEmails]);
+    } catch (error) {
+      console.error("Error generating copies:", error);
+      alert("Error generating copies. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8 sm:p-20">
@@ -238,8 +295,8 @@ export default function Home() {
         )}
 
         {uploadedFileName && (
-          <div className="px-6 py-10">
-            <h1 className="gabarito-semibold tracking-tighter text-7xl max-w-[950px] text-left">
+          <div className="px-6 py-10 flex flex-col items-center">
+            <h1 className="gabarito-semibold tracking-tighter text-7xl max-w-[950px] text-center">
               Explain your business briefly
             </h1>
 
@@ -252,14 +309,66 @@ export default function Home() {
               onChange={handleChange}
             />
 
-            <div className="mt-6 flex justify-center">
+            <div className="mt-6 flex flex-col items-center gap-4">
+              <div className="flex items-center gap-4">
+                <label className="gabarito-medium text-gray-700">
+                  Number of copies:
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={numCopies}
+                    onChange={(e) => setNumCopies(Math.min(10, Math.max(1, parseInt(e.target.value) || 1)))}
+                    className="ml-2 w-16 px-2 py-1 border border-gray-300 rounded-md"
+                  />
+                </label>
+              </div>
               <button
                 onClick={handleGenerateCopies}
-                className="gabarito-semibold bg-[#00D091] text-white text-2xl px-6 py-3 rounded-full hover:bg-[#00C187] transition"
+                disabled={isGenerating}
+                className={`gabarito-semibold text-white text-2xl px-6 py-3 rounded-full transition ${
+                  isGenerating ? 'bg-gray-400' : 'bg-[#00D091] hover:bg-[#00C187]'
+                }`}
               >
-                Generate Copies
+                {isGenerating ? 'Generating...' : 'Generate Copies'}
               </button>
             </div>
+
+            {generatedEmails.length > 0 && (
+              <div className="mt-8 w-full max-w-6xl">
+                <h2 className="text-2xl gabarito-semibold mb-4">Generated Emails</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {generatedEmails.map((email, index) => (
+                    <div 
+                      key={index} 
+                      className={`p-6 rounded-xl border shadow-sm cursor-pointer transition-all duration-300 ease-in-out ${
+                        selectedEmailIndex === index 
+                          ? 'bg-[#EDFCF7] border-[#00D091]' 
+                          : 'bg-white border-gray-200'
+                      }`}
+                      onClick={() => setSelectedEmailIndex(index)}
+                    >
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg gabarito-semibold">Email {index + 1}</h3>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(email);
+                            alert('Email copied to clipboard!');
+                          }}
+                          className="text-[#00D091] hover:text-[#00C187] gabarito-medium"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                      <div className="whitespace-pre-wrap text-gray-700 gabarito-medium">
+                        {email}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
