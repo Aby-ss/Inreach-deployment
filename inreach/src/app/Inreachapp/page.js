@@ -4,6 +4,9 @@ import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import Papa from "papaparse";
 import { useRef, useEffect } from "react";
+import Mailjet from 'node-mailjet';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
 
 export default function Home() {
 
@@ -18,6 +21,14 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [numCopies, setNumCopies] = useState(1);
   const [selectedEmailIndex, setSelectedEmailIndex] = useState(null);
+  const [isSending, setIsSending] = useState(false);
+  const [sendResults, setSendResults] = useState(null);
+  const [mailjetConfig, setMailjetConfig] = useState({
+    apiKey: '',
+    apiSecret: '',
+    senderEmail: ''
+  });
+  const [emailTemplate, setEmailTemplate] = useState('');
 
   const textareaRef = useRef(null);
 
@@ -169,6 +180,256 @@ export default function Home() {
       alert("Error generating copies. Please try again.");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  // Function to extract email from website
+  const extractEmailFromWebsite = async (url) => {
+    try {
+      // Ensure URL has proper protocol
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+
+      console.log(`🌐 Scraping website: ${url}`);
+      
+      // Use a CORS proxy
+      const corsProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+      
+      // Add headers to mimic a browser request
+      const response = await axios.get(corsProxyUrl, {
+        timeout: 15000, // Increased timeout
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1'
+        },
+        validateStatus: function (status) {
+          return status >= 200 && status < 500; // Accept all status codes less than 500
+        }
+      });
+
+      if (response.status !== 200) {
+        console.log(`❌ Website returned status code: ${response.status}`);
+        return null;
+      }
+
+      const html = response.data;
+      const $ = cheerio.load(html);
+      
+      // Look for mailto links
+      let email = null;
+      $('a[href^="mailto:"]').each((_, element) => {
+        const href = $(element).attr('href');
+        if (href) {
+          email = href.replace('mailto:', '').trim();
+        }
+      });
+
+      // If no mailto link found, search in text
+      if (!email) {
+        const emailRegex = /[\w.-]+@[\w.-]+\.\w+/g;
+        const matches = html.match(emailRegex);
+        if (matches && matches.length > 0) {
+          // Filter out common false positives
+          email = matches.find(match => 
+            !match.includes('example.com') && 
+            !match.includes('domain.com') &&
+            !match.includes('yourdomain.com') &&
+            !match.includes('email.com')
+          );
+        }
+      }
+
+      if (email) {
+        console.log(`✅ Found email: ${email}`);
+      } else {
+        console.log(`❌ No email found`);
+      }
+
+      return email;
+    } catch (error) {
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error(`❌ Error scraping ${url}: Server responded with status ${error.response.status}`);
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error(`❌ Error scraping ${url}: No response received. Trying alternative method...`);
+        try {
+          // Try alternative CORS proxy
+          const altProxyUrl = `https://cors-anywhere.herokuapp.com/${url}`;
+          const altResponse = await axios.get(altProxyUrl, {
+            timeout: 15000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+              'Origin': 'http://localhost:3000'
+            }
+          });
+          
+          if (altResponse.status === 200) {
+            const html = altResponse.data;
+            const $ = cheerio.load(html);
+            
+            // Look for mailto links
+            let email = null;
+            $('a[href^="mailto:"]').each((_, element) => {
+              const href = $(element).attr('href');
+              if (href) {
+                email = href.replace('mailto:', '').trim();
+              }
+            });
+
+            // If no mailto link found, search in text
+            if (!email) {
+              const emailRegex = /[\w.-]+@[\w.-]+\.\w+/g;
+              const matches = html.match(emailRegex);
+              if (matches && matches.length > 0) {
+                email = matches[0];
+              }
+            }
+
+            if (email) {
+              console.log(`✅ Found email using alternative method: ${email}`);
+              return email;
+            }
+          }
+        } catch (altError) {
+          console.error(`❌ Alternative method also failed for ${url}`);
+        }
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error(`❌ Error scraping ${url}: ${error.message}`);
+      }
+      return null;
+    }
+  };
+
+  const handleSendEmails = async () => {
+    if (selectedEmailIndex === null) {
+      alert("Please select an email template first");
+      return;
+    }
+
+    if (!mailjetConfig.apiKey || !mailjetConfig.apiSecret || !mailjetConfig.senderEmail) {
+      alert("Please fill in all Mailjet configuration fields");
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const mailjet = new Mailjet({
+        apiKey: mailjetConfig.apiKey,
+        apiSecret: mailjetConfig.apiSecret
+      });
+
+      const results = {
+        successful: [],
+        failed: []
+      };
+
+      // Find website column
+      const websiteColumn = Object.keys(previewData[0]).find(key => 
+        columns[key] === 'Website' || 
+        key.toLowerCase().includes('website') ||
+        key.toLowerCase().includes('url') ||
+        columns[key]?.toLowerCase().includes('website')
+      );
+
+      if (!websiteColumn) {
+        throw new Error("No website column found in CSV");
+      }
+
+      // Process each recipient
+      for (const row of previewData) {
+        const website = row[websiteColumn];
+        if (!website) {
+          console.log('❌ Skipping row - No website URL found');
+          continue;
+        }
+
+        const nameColumn = Object.keys(row).find(key => 
+          columns[key] === 'Name' || 
+          key.toLowerCase().includes('name') ||
+          columns[key]?.toLowerCase().includes('name')
+        );
+        const recipientName = nameColumn ? row[nameColumn] : 'Unknown';
+
+        console.log(`\n👤 Processing: ${recipientName}`);
+        console.log(`🌐 Website: ${website}`);
+
+        // Extract email from website
+        const recipientEmail = await extractEmailFromWebsite(website);
+        
+        if (!recipientEmail) {
+          console.log(`❌ Skipping ${recipientName} - No email found`);
+          results.failed.push({
+            name: recipientName,
+            reason: 'No email found on website'
+          });
+          continue;
+        }
+
+        try {
+          const data = {
+            Messages: [
+              {
+                From: {
+                  Email: mailjetConfig.senderEmail,
+                  Name: mailjetConfig.senderEmail.split('@')[0]
+                },
+                To: [
+                  {
+                    Email: recipientEmail,
+                    Name: recipientName
+                  }
+                ],
+                Subject: 'Reaching out about potential collaboration',
+                TextPart: generatedEmails[selectedEmailIndex]
+              }
+            ]
+          };
+
+          console.log(`📧 Sending email to: ${recipientEmail}`);
+          const response = await mailjet.post('send', { version: 'v3.1' }).request(data);
+          
+          if (response.body.Messages[0].Status === 'success') {
+            console.log(`✅ Email sent successfully to ${recipientName}`);
+            results.successful.push({
+              name: recipientName,
+              email: recipientEmail
+            });
+          } else {
+            console.log(`❌ Failed to send email to ${recipientName}`);
+            results.failed.push({
+              name: recipientName,
+              email: recipientEmail,
+              reason: 'Failed to send'
+            });
+          }
+        } catch (error) {
+          console.error(`Error sending to ${recipientEmail}:`, error);
+          results.failed.push({
+            name: recipientName,
+            email: recipientEmail,
+            reason: error.message
+          });
+        }
+      }
+
+      setSendResults(results);
+      
+      // Show summary
+      const successCount = results.successful.length;
+      const failCount = results.failed.length;
+      alert(`Email sending complete!\n✅ Successfully sent: ${successCount}\n❌ Failed: ${failCount}`);
+    } catch (error) {
+      console.error('Error sending emails:', error);
+      alert('Error sending emails. Please try again.');
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -337,6 +598,50 @@ export default function Home() {
             {generatedEmails.length > 0 && (
               <div className="mt-8 w-full max-w-6xl">
                 <h2 className="text-2xl gabarito-semibold mb-4">Generated Emails</h2>
+                
+                {/* Add Mailjet Configuration Section */}
+                <div className="mb-8 p-6 bg-white rounded-xl border border-gray-200">
+                  <h3 className="text-xl gabarito-semibold mb-4">Mailjet Configuration</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm gabarito-medium text-gray-700 mb-1">
+                        Sender Email
+                      </label>
+                      <input
+                        type="email"
+                        value={mailjetConfig.senderEmail}
+                        onChange={(e) => setMailjetConfig(prev => ({ ...prev, senderEmail: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md gabarito-medium"
+                        placeholder="your-email@example.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm gabarito-medium text-gray-700 mb-1">
+                        Mailjet API Key
+                      </label>
+                      <input
+                        type="password"
+                        value={mailjetConfig.apiKey}
+                        onChange={(e) => setMailjetConfig(prev => ({ ...prev, apiKey: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md gabarito-medium"
+                        placeholder="Your Mailjet API Key"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm gabarito-medium text-gray-700 mb-1">
+                        Mailjet API Secret
+                      </label>
+                      <input
+                        type="password"
+                        value={mailjetConfig.apiSecret}
+                        onChange={(e) => setMailjetConfig(prev => ({ ...prev, apiSecret: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md gabarito-medium"
+                        placeholder="Your Mailjet API Secret"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {generatedEmails.map((email, index) => (
                     <div 
@@ -370,12 +675,45 @@ export default function Home() {
 
                 <div className="mt-8 flex justify-center">
                   <button
-                    onClick={() => {}}
-                    className="gabarito-semibold bg-[#00D091] text-white text-2xl px-6 py-3 rounded-full hover:bg-[#00C187] transition-all duration-300 ease-in-out"
+                    onClick={handleSendEmails}
+                    disabled={isSending || selectedEmailIndex === null}
+                    className={`gabarito-semibold text-white text-2xl px-6 py-3 rounded-full transition-all duration-300 ease-in-out ${
+                      isSending || selectedEmailIndex === null
+                        ? 'bg-gray-400'
+                        : 'bg-[#00D091] hover:bg-[#00C187]'
+                    }`}
                   >
-                    Send Emails
+                    {isSending ? 'Sending...' : 'Send Emails'}
                   </button>
                 </div>
+
+                {sendResults && (
+                  <div className="mt-8 p-6 bg-white rounded-xl border border-gray-200">
+                    <h3 className="text-xl gabarito-semibold mb-4">Sending Results</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-lg gabarito-medium text-[#00D091]">✅ Successful ({sendResults.successful.length})</h4>
+                        <ul className="mt-2 space-y-2">
+                          {sendResults.successful.map((result, index) => (
+                            <li key={index} className="text-gray-700">
+                              {result.name} ({result.email})
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="text-lg gabarito-medium text-red-500">❌ Failed ({sendResults.failed.length})</h4>
+                        <ul className="mt-2 space-y-2">
+                          {sendResults.failed.map((result, index) => (
+                            <li key={index} className="text-gray-700">
+                              {result.name} - {result.reason}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
