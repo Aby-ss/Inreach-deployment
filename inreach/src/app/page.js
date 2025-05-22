@@ -9,7 +9,6 @@ export default function Home() {
   return (
     <>
 
-      {/* 🔵 Sticky Full-Width Navbar */}
       <nav className="bg-[#2B2D42] text-white py-3 px-6 sticky top-5 z-50 shadow-md rounded-full mx-6">
         <div className="max-w-[1440px] mx-auto flex justify-between items-center">
           
@@ -18,7 +17,6 @@ export default function Home() {
             <img src="logo.png" alt="Logo" className="h-7 w-auto" />
           </div>
 
-          {/* 🔹 Center Nav Links (Desktop) */}
           <div className="hidden sm:flex text-xl gap-8 items-center text-base font-medium">
             <Link href="#home" className="gabarito-medium tracking-[-0.020em]">Home</Link>
             <Link href="#pricing" className="gabarito-medium tracking-[-0.020em]">Pricing</Link>
@@ -29,7 +27,6 @@ export default function Home() {
 
           {/* 🔹 Buttons (Desktop) */}
           <div className="hidden sm:flex gap-7 items-center">
-            <button className="text-base text-white gabarito-semibold tracking-tight">Login</button>
             <button className="bg-[#686AF1] text-white px-6 py-3 rounded-full gabarito-semibold tracking-tight">
               Get Started
             </button>
@@ -48,7 +45,6 @@ export default function Home() {
 
       <div className={`fixed top-0 left-0 h-full w-full bg-white shadow-lg z-50 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
         
-        {/* 🧭 Header */}
         <div className="flex justify-between items-center p-4 border-b">
           <span className="text-2xl font-bold text-[#2B2D42]">Menu</span>
           <button onClick={() => setSidebarOpen(false)}>
@@ -178,7 +174,7 @@ export default function Home() {
         {/* How it Works Section */}
         <section className="w-full flex justify-center items-center py-20 px-4">
           <div className="max-w-7xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            {/* 🔵 Video Box */}
+
             <div className="rounded-xl overflow-hidden shadow-lg w-full h-[300px] md:h-[500px]">
               <video
                 className="w-full h-full object-cover"
@@ -191,7 +187,6 @@ export default function Home() {
               </video>
             </div>
 
-            {/* 📝 Text Content */}
             <div className="text-left">
               <h1 className="text-3xl md:text-6xl gabarito-semibold tracking-tighter text-[#1A1A1A] mb-4 w-[800px]">
                 Turn Words Into <br/>  <span className="bg-[#00D091] px-2 -rotate-1 inline-block"><span className="text-white">Winning Emails</span></span> in Seconds
