@@ -4,6 +4,7 @@ const Papa = require('papaparse');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const readline = require('readline');
+const Mailjet = require('node-mailjet');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -60,24 +61,46 @@ function detectColumnType(header, values) {
   return "Unknown";
 }
 
-// Function to send email
-async function sendEmail(to, subject, body) {
+// Function to send email using Mailjet
+async function sendEmail(to, subject, body, userEmail, apiKey, apiSecret) {
   try {
-    // TODO: Implement your email sending logic here
-    console.log(`📧 Sending email to: ${to}`);
-    console.log(`📝 Subject: ${subject}`);
-    console.log(`📄 Body: ${body}`);
+    const mailjet = new Mailjet({
+      apiKey: apiKey,
+      apiSecret: apiSecret
+    });
+
+    const data = {
+      Messages: [
+        {
+          From: {
+            Email: userEmail,
+            Name: userEmail.split('@')[0]
+          },
+          To: [
+            {
+              Email: to,
+              Name: to.split('@')[0]
+            }
+          ],
+          Subject: subject,
+          TextPart: body
+        }
+      ]
+    };
+
+    const response = await mailjet.post('send', { version: 'v3.1' }).request(data);
     
-    // Placeholder for actual email sending
+    console.log(`📧 Email sent successfully to ${to}`);
+    console.log(`📨 Message ID: ${response.body.Messages[0].To[0].MessageID}`);
     return true;
   } catch (error) {
-    console.error('❌ Error sending email:', error);
+    console.error('❌ Error sending email:', error.message);
     return false;
   }
 }
 
 // Main function to process CSV and send emails
-async function processCSVAndSendEmails(filePath, emailTemplate) {
+async function processCSVAndSendEmails(filePath, emailTemplate, userEmail, apiKey, apiSecret) {
   try {
     // Read and parse CSV
     console.log(`📂 Reading CSV file: ${filePath}`);
@@ -132,7 +155,10 @@ async function processCSVAndSendEmails(filePath, emailTemplate) {
       const success = await sendEmail(
         email,
         'Reaching out about potential collaboration',
-        emailTemplate
+        emailTemplate,
+        userEmail,
+        apiKey,
+        apiSecret
       );
 
       if (success) {
@@ -179,6 +205,19 @@ async function main() {
     const filePath = path.join(scriptDir, csvFiles[0]);
     console.log(`📂 Using CSV file: ${csvFiles[0]}`);
 
+    // Get user's Mailjet credentials
+    const userEmail = await new Promise(resolve => {
+      rl.question('\n📧 Enter your sending email address: ', resolve);
+    });
+
+    const apiKey = await new Promise(resolve => {
+      rl.question('🔑 Enter your Mailjet API Key: ', resolve);
+    });
+
+    const apiSecret = await new Promise(resolve => {
+      rl.question('🔐 Enter your Mailjet API Secret: ', resolve);
+    });
+
     // Get email template
     const emailTemplate = await new Promise(resolve => {
       rl.question('\n📝 Enter your email template (press Enter twice to finish):\n', () => {
@@ -195,7 +234,7 @@ async function main() {
     });
 
     // Process CSV and send emails
-    await processCSVAndSendEmails(filePath, emailTemplate);
+    await processCSVAndSendEmails(filePath, emailTemplate, userEmail, apiKey, apiSecret);
 
   } catch (error) {
     console.error('❌ Error:', error.message);
