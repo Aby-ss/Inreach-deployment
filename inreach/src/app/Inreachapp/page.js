@@ -183,130 +183,6 @@ export default function Home() {
     }
   };
 
-  // Function to extract email from website
-  const extractEmailFromWebsite = async (url) => {
-    try {
-      // Ensure URL has proper protocol
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'https://' + url;
-      }
-
-      console.log(`🌐 Scraping website: ${url}`);
-      
-      // Use a CORS proxy
-      const corsProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-      
-      // Add headers to mimic a browser request
-      const response = await axios.get(corsProxyUrl, {
-        timeout: 15000, // Increased timeout
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.5',
-          'Connection': 'keep-alive',
-          'Upgrade-Insecure-Requests': '1'
-        },
-        validateStatus: function (status) {
-          return status >= 200 && status < 500; // Accept all status codes less than 500
-        }
-      });
-
-      if (response.status !== 200) {
-        console.log(`❌ Website returned status code: ${response.status}`);
-        return null;
-      }
-
-      const html = response.data;
-      const $ = cheerio.load(html);
-      
-      // Look for mailto links
-      let email = null;
-      $('a[href^="mailto:"]').each((_, element) => {
-        const href = $(element).attr('href');
-        if (href) {
-          email = href.replace('mailto:', '').trim();
-        }
-      });
-
-      // If no mailto link found, search in text
-      if (!email) {
-        const emailRegex = /[\w.-]+@[\w.-]+\.\w+/g;
-        const matches = html.match(emailRegex);
-        if (matches && matches.length > 0) {
-          // Filter out common false positives
-          email = matches.find(match => 
-            !match.includes('example.com') && 
-            !match.includes('domain.com') &&
-            !match.includes('yourdomain.com') &&
-            !match.includes('email.com')
-          );
-        }
-      }
-
-      if (email) {
-        console.log(`✅ Found email: ${email}`);
-      } else {
-        console.log(`❌ No email found`);
-      }
-
-      return email;
-    } catch (error) {
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error(`❌ Error scraping ${url}: Server responded with status ${error.response.status}`);
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error(`❌ Error scraping ${url}: No response received. Trying alternative method...`);
-        try {
-          // Try alternative CORS proxy
-          const altProxyUrl = `https://cors-anywhere.herokuapp.com/${url}`;
-          const altResponse = await axios.get(altProxyUrl, {
-            timeout: 15000,
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-              'Origin': 'http://localhost:3000'
-            }
-          });
-          
-          if (altResponse.status === 200) {
-            const html = altResponse.data;
-            const $ = cheerio.load(html);
-            
-            // Look for mailto links
-            let email = null;
-            $('a[href^="mailto:"]').each((_, element) => {
-              const href = $(element).attr('href');
-              if (href) {
-                email = href.replace('mailto:', '').trim();
-              }
-            });
-
-            // If no mailto link found, search in text
-            if (!email) {
-              const emailRegex = /[\w.-]+@[\w.-]+\.\w+/g;
-              const matches = html.match(emailRegex);
-              if (matches && matches.length > 0) {
-                email = matches[0];
-              }
-            }
-
-            if (email) {
-              console.log(`✅ Found email using alternative method: ${email}`);
-              return email;
-            }
-          }
-        } catch (altError) {
-          console.error(`❌ Alternative method also failed for ${url}`);
-        }
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        console.error(`❌ Error scraping ${url}: ${error.message}`);
-      }
-      return null;
-    }
-  };
-
   const handleSendEmails = async () => {
     if (selectedEmailIndex === null) {
       alert("Please select an email template first");
@@ -330,47 +206,35 @@ export default function Home() {
         failed: []
       };
 
-      // Find website column
-      const websiteColumn = Object.keys(previewData[0]).find(key => 
-        columns[key] === 'Website' || 
-        key.toLowerCase().includes('website') ||
-        key.toLowerCase().includes('url') ||
-        columns[key]?.toLowerCase().includes('website')
+      // Find email and name columns
+      const emailColumn = Object.keys(previewData[0]).find(key => 
+        columns[key] === 'Email' || 
+        key.toLowerCase().includes('email') ||
+        columns[key]?.toLowerCase().includes('email')
       );
 
-      if (!websiteColumn) {
-        throw new Error("No website column found in CSV");
+      const nameColumn = Object.keys(previewData[0]).find(key => 
+        columns[key] === 'Name' || 
+        key.toLowerCase().includes('name') ||
+        columns[key]?.toLowerCase().includes('name')
+      );
+
+      if (!emailColumn) {
+        throw new Error("No email column found in CSV");
       }
 
       // Process each recipient
       for (const row of previewData) {
-        const website = row[websiteColumn];
-        if (!website) {
-          console.log('❌ Skipping row - No website URL found');
+        const recipientEmail = row[emailColumn];
+        if (!recipientEmail) {
+          console.log('❌ Skipping row - No email found');
           continue;
         }
 
-        const nameColumn = Object.keys(row).find(key => 
-          columns[key] === 'Name' || 
-          key.toLowerCase().includes('name') ||
-          columns[key]?.toLowerCase().includes('name')
-        );
         const recipientName = nameColumn ? row[nameColumn] : 'Unknown';
 
         console.log(`\n👤 Processing: ${recipientName}`);
-        console.log(`🌐 Website: ${website}`);
-
-        // Extract email from website
-        const recipientEmail = await extractEmailFromWebsite(website);
-        
-        if (!recipientEmail) {
-          console.log(`❌ Skipping ${recipientName} - No email found`);
-          results.failed.push({
-            name: recipientName,
-            reason: 'No email found on website'
-          });
-          continue;
-        }
+        console.log(`📧 Email: ${recipientEmail}`);
 
         try {
           const data = {
