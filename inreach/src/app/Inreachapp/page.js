@@ -196,16 +196,6 @@ export default function Home() {
 
     setIsSending(true);
     try {
-      const mailjet = new Mailjet({
-        apiKey: mailjetConfig.apiKey,
-        apiSecret: mailjetConfig.apiSecret
-      });
-
-      const results = {
-        successful: [],
-        failed: []
-      };
-
       // Find email and name columns
       const emailColumn = Object.keys(previewData[0]).find(key => 
         columns[key] === 'Email' || 
@@ -219,70 +209,71 @@ export default function Home() {
         columns[key]?.toLowerCase().includes('name')
       );
 
+      const companyColumn = Object.keys(previewData[0]).find(key => 
+        columns[key]?.toLowerCase().includes('company') ||
+        columns[key]?.toLowerCase().includes('business') ||
+        columns[key]?.toLowerCase().includes('organization')
+      );
+
       if (!emailColumn) {
         throw new Error("No email column found in CSV");
       }
 
-      // Process each recipient
-      for (const row of previewData) {
-        const recipientEmail = row[emailColumn];
-        if (!recipientEmail) {
-          console.log('❌ Skipping row - No email found');
-          continue;
-        }
-
-        const recipientName = nameColumn ? row[nameColumn] : 'Unknown';
-
-        console.log(`\n👤 Processing: ${recipientName}`);
-        console.log(`📧 Email: ${recipientEmail}`);
-
-        try {
-          const data = {
-            Messages: [
-              {
-                From: {
-                  Email: mailjetConfig.senderEmail,
-                  Name: mailjetConfig.senderEmail.split('@')[0]
-                },
-                To: [
-                  {
-                    Email: recipientEmail,
-                    Name: recipientName
-                  }
-                ],
-                Subject: 'Reaching out about potential collaboration',
-                TextPart: generatedEmails[selectedEmailIndex]
-              }
-            ]
-          };
-
-          console.log(`📧 Sending email to: ${recipientEmail}`);
-          const response = await mailjet.post('send', { version: 'v3.1' }).request(data);
-          
-          if (response.body.Messages[0].Status === 'success') {
-            console.log(`✅ Email sent successfully to ${recipientName}`);
-            results.successful.push({
-              name: recipientName,
-              email: recipientEmail
-            });
-          } else {
-            console.log(`❌ Failed to send email to ${recipientName}`);
-            results.failed.push({
-              name: recipientName,
-              email: recipientEmail,
-              reason: 'Failed to send'
-            });
+      // Prepare recipients data
+      const recipients = previewData.map(row => {
+        const email = row[emailColumn];
+        let name = 'Unknown';
+        if (nameColumn && row[nameColumn]) {
+          name = row[nameColumn].trim();
+          if (name.length <= 1) {
+            name = 'Valued Professional';
           }
-        } catch (error) {
-          console.error(`Error sending to ${recipientEmail}:`, error);
-          results.failed.push({
-            name: recipientName,
-            email: recipientEmail,
-            reason: error.message
-          });
+        } else {
+          const emailName = email.split('@')[0];
+          if (emailName && emailName.length > 1) {
+            name = emailName
+              .replace(/[._-]/g, ' ')
+              .split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ');
+          } else {
+            name = 'Valued Professional';
+          }
         }
+
+        let company = 'your organization';
+        if (companyColumn && row[companyColumn]) {
+          company = row[companyColumn].trim();
+          if (company.length <= 1) {
+            company = 'your organization';
+          }
+        }
+
+        return { email, name, company };
+      }).filter(recipient => recipient.email); // Filter out rows without email
+
+      // Get the selected email template
+      const emailTemplate = generatedEmails[selectedEmailIndex];
+
+      // Call the API endpoint
+      const response = await fetch('/api/send-emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recipients,
+          emailTemplate,
+          mailjetConfig
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to send emails');
       }
 
+      const results = await response.json();
       setSendResults(results);
       
       // Show summary
@@ -291,7 +282,7 @@ export default function Home() {
       alert(`Email sending complete!\n✅ Successfully sent: ${successCount}\n❌ Failed: ${failCount}`);
     } catch (error) {
       console.error('Error sending emails:', error);
-      alert('Error sending emails. Please try again.');
+      alert(`Error sending emails: ${error.message}\nPlease check your Mailjet configuration and internet connection.`);
     } finally {
       setIsSending(false);
     }
@@ -463,7 +454,6 @@ export default function Home() {
               <div className="mt-8 w-full max-w-6xl">
                 <h2 className="text-2xl gabarito-semibold mb-4">Generated Emails</h2>
                 
-                {/* Add Mailjet Configuration Section */}
                 <div className="mb-8 p-6 bg-white rounded-xl border border-gray-200">
                   <h3 className="text-xl gabarito-semibold mb-4">Mailjet Configuration</h3>
                   <div className="space-y-4">
