@@ -26,4 +26,5 @@ App Development:
           ✔ Showcase spreadsheet columns detected for user confirmation
           ✔ Generate custom pitch and email marketing copy using Custom-AI
           ✔ Start sending emails and other messages and track analytics
+          ☐ Integrate Instagram Direct Messages with API/node module
           ☐ Update main AI generation for performance and accuracy
