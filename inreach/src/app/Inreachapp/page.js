@@ -145,7 +145,11 @@ export default function Home() {
     try {
       const newEmails = [];
       const newSubjects = [];
+      
+      // Process one email at a time
       for (let i = 0; i < numCopies; i++) {
+        console.log(`Generating email ${i + 1}/${numCopies}...`);
+        
         // Get the business context from the textarea
         const businessContext = text;
 
@@ -171,21 +175,48 @@ export default function Home() {
           Do not include any other text or formatting in your response.
         `;
 
-        // Call the local Ollama LLM
-        const response = await fetch('http://localhost:11434/api/generate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'mistral',
-            prompt: prompt,
-            stream: false,
-          }),
-        });
+        // Try up to 3 times with increasing delays
+        let responseText = '';
+        let attempts = 0;
+        const maxAttempts = 3;
+        
+        while (attempts < maxAttempts) {
+          try {
+            attempts++;
+            console.log(`Attempt ${attempts}/${maxAttempts}...`);
+            
+            const response = await fetch('http://localhost:11434/api/generate', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'mistral',
+                prompt: prompt,
+                stream: false,
+                options: {
+                  temperature: 0.7,
+                  num_predict: 500 // Limit response length to improve speed
+                }
+              }),
+            });
 
-        const data = await response.json();
-        const responseText = data.response;
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            responseText = data.response;
+            break; // Success, exit the retry loop
+          } catch (error) {
+            console.error(`Attempt ${attempts} failed:`, error);
+            if (attempts === maxAttempts) {
+              throw new Error(`Failed to generate email after ${maxAttempts} attempts: ${error.message}`);
+            }
+            // Wait before retrying (2s, 4s, 6s)
+            await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
+          }
+        }
         
         // Parse subject and body with more robust regex
         const subjectMatch = responseText.match(/SUBJECT:\s*([^\n]+)/i);
@@ -209,7 +240,7 @@ export default function Home() {
       setEmailSubjects(prev => [...prev, ...newSubjects]);
     } catch (error) {
       console.error("Error generating copies:", error);
-      alert("Error generating copies. Please try again.");
+      alert(`Error generating copies: ${error.message}\nPlease try again.`);
     } finally {
       setIsGenerating(false);
     }
