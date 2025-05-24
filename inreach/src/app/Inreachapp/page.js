@@ -384,7 +384,7 @@ export default function Home() {
           {isDragActive ? (
             <p>Drop the file here...</p>
           ) : (
-            <p>Drag & Drag a CSV File or Click to Choose</p>
+            <p>Drag & Drop a CSV File or Click to Choose</p>
           )}
         </div>
 
