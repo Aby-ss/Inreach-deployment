@@ -1,15 +1,15 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import Papa from "papaparse";
-import { useRef, useEffect } from "react";
+import { useRef } from "react";
 import Mailjet from 'node-mailjet';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 
 export default function Home() {
-
+  const [mounted, setMounted] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState(null);
   const [previewData, setPreviewData] = useState([]);
   const [columns, setColumns] = useState({});
@@ -29,8 +29,15 @@ export default function Home() {
     senderEmail: ''
   });
   const [emailTemplate, setEmailTemplate] = useState('');
+  const [editingEmailIndex, setEditingEmailIndex] = useState(null);
+  const [emailSubjects, setEmailSubjects] = useState([]);
 
   const textareaRef = useRef(null);
+
+  // Handle client-side initialization
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const detectColumnType = (header, values) => {
     const joined = values.join(" ").toLowerCase();
@@ -137,6 +144,7 @@ export default function Home() {
     setIsGenerating(true);
     try {
       const newEmails = [];
+      const newSubjects = [];
       for (let i = 0; i < numCopies; i++) {
         // Get the business context from the textarea
         const businessContext = text;
@@ -155,6 +163,12 @@ export default function Home() {
           2. Is personalized to the recipient
           3. Is concise and to the point
           4. Has a clear call to action
+
+          Format your response exactly like this:
+          SUBJECT: [Your subject line here]
+          BODY: [Your email body here]
+
+          Do not include any other text or formatting in your response.
         `;
 
         // Call the local Ollama LLM
@@ -171,16 +185,45 @@ export default function Home() {
         });
 
         const data = await response.json();
-        newEmails.push(data.response);
+        const responseText = data.response;
+        
+        // Parse subject and body with more robust regex
+        const subjectMatch = responseText.match(/SUBJECT:\s*([^\n]+)/i);
+        const bodyMatch = responseText.match(/BODY:\s*([\s\S]*?)(?:\n\s*$|$)/i);
+        
+        // Extract and clean the subject and body
+        const subject = subjectMatch ? subjectMatch[1].trim() : 'No subject';
+        let body = bodyMatch ? bodyMatch[1].trim() : responseText.trim();
+        
+        // Remove any remaining subject line markers from the body
+        body = body.replace(/^SUBJECT:.*$/im, '').trim();
+        
+        // Remove any emojis from the subject
+        const cleanSubject = subject.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+        
+        newEmails.push(body);
+        newSubjects.push(cleanSubject);
       }
       
       setGeneratedEmails(prev => [...prev, ...newEmails]);
+      setEmailSubjects(prev => [...prev, ...newSubjects]);
     } catch (error) {
       console.error("Error generating copies:", error);
       alert("Error generating copies. Please try again.");
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleEditEmail = (index) => {
+    setEditingEmailIndex(index);
+  };
+
+  const handleSaveEdit = (index, newContent) => {
+    const updatedEmails = [...generatedEmails];
+    updatedEmails[index] = newContent;
+    setGeneratedEmails(updatedEmails);
+    setEditingEmailIndex(null);
   };
 
   const handleSendEmails = async () => {
@@ -252,8 +295,9 @@ export default function Home() {
         return { email, name, company };
       }).filter(recipient => recipient.email); // Filter out rows without email
 
-      // Get the selected email template
+      // Get the selected email template and subject
       const emailTemplate = generatedEmails[selectedEmailIndex];
+      const emailSubject = emailSubjects[selectedEmailIndex];
 
       // Call the API endpoint
       const response = await fetch('/api/send-emails', {
@@ -264,6 +308,7 @@ export default function Home() {
         body: JSON.stringify({
           recipients,
           emailTemplate,
+          emailSubject,
           mailjetConfig
         }),
       });
@@ -287,6 +332,11 @@ export default function Home() {
       setIsSending(false);
     }
   };
+
+  // Modify the return statement to handle hydration
+  if (!mounted) {
+    return null; // or a loading spinner
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8 sm:p-20">
@@ -509,20 +559,91 @@ export default function Home() {
                     >
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg gabarito-semibold">Email {index + 1}</h3>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigator.clipboard.writeText(email);
-                            alert('Email copied to clipboard!');
-                          }}
-                          className="text-[#00D091] hover:text-[#00C187] gabarito-medium"
-                        >
-                          Copy
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditEmail(index);
+                            }}
+                            className="text-[#686AF1] hover:text-[#5a5cd9] gabarito-medium"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(email);
+                              alert('Email copied to clipboard!');
+                            }}
+                            className="text-[#00D091] hover:text-[#00C187] gabarito-medium"
+                          >
+                            Copy
+                          </button>
+                        </div>
                       </div>
-                      <div className="whitespace-pre-wrap text-gray-700 gabarito-medium">
-                        {email}
-                      </div>
+                      {editingEmailIndex === index ? (
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm gabarito-medium text-gray-700 mb-1">
+                              Subject
+                            </label>
+                            <input
+                              type="text"
+                              value={emailSubjects[index]}
+                              onChange={(e) => {
+                                const newSubjects = [...emailSubjects];
+                                newSubjects[index] = e.target.value;
+                                setEmailSubjects(newSubjects);
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md gabarito-medium"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm gabarito-medium text-gray-700 mb-1">
+                              Email Body
+                            </label>
+                            <textarea
+                              value={email}
+                              onChange={(e) => {
+                                const newEmails = [...generatedEmails];
+                                newEmails[index] = e.target.value;
+                                setGeneratedEmails(newEmails);
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md gabarito-medium min-h-[200px]"
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingEmailIndex(null);
+                              }}
+                              className="px-4 py-2 text-gray-600 hover:text-gray-800 gabarito-medium"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSaveEdit(index, email);
+                              }}
+                              className="px-4 py-2 bg-[#00D091] text-white rounded-md hover:bg-[#00C187] gabarito-medium"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="mb-4">
+                            <h4 className="text-sm gabarito-medium text-gray-500 mb-1">Subject:</h4>
+                            <p className="text-gray-700 gabarito-medium">{emailSubjects[index]}</p>
+                          </div>
+                          <div className="whitespace-pre-wrap text-gray-700 gabarito-medium">
+                            {email}
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>

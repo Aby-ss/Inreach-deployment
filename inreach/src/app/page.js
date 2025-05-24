@@ -6,6 +6,19 @@ import { useState } from 'react';
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleNavClick = (sectionId) => {
+    setSidebarOpen(false); // Close mobile menu if open
+    scrollToSection(sectionId);
+  };
+
   return (
     <>
 
@@ -13,28 +26,29 @@ export default function Home() {
         <div className="max-w-[1440px] mx-auto flex justify-between items-center">
           
           {/* 🔹 Logo */}
-          <div className="flex items-center">
+          <div className="flex items-center cursor-pointer">
             <img src="logo.png" alt="Logo" className="h-7 w-auto" />
           </div>
 
           <div className="hidden sm:flex text-xl gap-8 items-center text-base font-medium">
-            <Link href="#home" className="gabarito-medium tracking-[-0.020em]">Home</Link>
-            <Link href="#pricing" className="gabarito-medium tracking-[-0.020em]">Pricing</Link>
-            <Link href="#features" className="gabarito-medium tracking-[-0.020em]">Features</Link>
-            <Link href="#blogs" className="gabarito-medium tracking-[-0.020em]">Blog</Link>
-            <Link href="#about" className="gabarito-medium tracking-[-0.020em]">About Us</Link>
+            <button onClick={() => handleNavClick('home')} className="gabarito-medium tracking-[-0.020em] hover:text-[#686AF1] transition-colors cursor-pointer">Home</button>
+            <button onClick={() => handleNavClick('features')} className="gabarito-medium tracking-[-0.020em] hover:text-[#686AF1] transition-colors cursor-pointer">Features</button>
+            <button onClick={() => handleNavClick('how-it-works')} className="gabarito-medium tracking-[-0.020em] hover:text-[#686AF1] transition-colors cursor-pointer">How it Works</button>
+            <button onClick={() => handleNavClick('about')} className="gabarito-medium tracking-[-0.020em] hover:text-[#686AF1] transition-colors cursor-pointer">About Us</button>
           </div>
 
           {/* 🔹 Buttons (Desktop) */}
           <div className="hidden sm:flex gap-7 items-center">
-            <button className="bg-[#686AF1] text-white px-6 py-3 rounded-full gabarito-semibold tracking-tight">
-              Get Started
-            </button>
+            <Link href="/Inreachapp">
+              <button className="bg-[#686AF1] text-white px-6 py-3 rounded-full gabarito-semibold tracking-tight hover:bg-[#5a5cd9] transition-colors cursor-pointer">
+                Get Started
+              </button>
+            </Link>
           </div>
 
           {/* 🔹 Hamburger Icon (Mobile) */}
           <div className="block sm:hidden">
-            <button onClick={() => setSidebarOpen(true)}>
+            <button onClick={() => setSidebarOpen(true)} className="cursor-pointer">
               <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
@@ -47,7 +61,7 @@ export default function Home() {
         
         <div className="flex justify-between items-center p-4 border-b">
           <span className="text-2xl font-bold text-[#2B2D42]">Menu</span>
-          <button onClick={() => setSidebarOpen(false)}>
+          <button onClick={() => setSidebarOpen(false)} className="cursor-pointer">
             <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -55,24 +69,24 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col gap-6 p-6 text-[#2B2D42] font-medium">
-          <Link href="#features" onClick={() => setSidebarOpen(false)}>Features</Link>
-          <Link href="#pricing" onClick={() => setSidebarOpen(false)}>Pricing</Link>
-          <Link href="#faq" onClick={() => setSidebarOpen(false)}>FAQ</Link>
-          <Link href="#contact" onClick={() => setSidebarOpen(false)}>Contact</Link>
-          <button className="text-left">Login</button>
-          <button className="bg-[#686AF1] text-white px-6 py-2 rounded-full w-max">Get Started</button>
+          <button onClick={() => handleNavClick('features')} className="text-left hover:text-[#686AF1] transition-colors cursor-pointer">Features</button>
+          <button onClick={() => handleNavClick('how-it-works')} className="text-left hover:text-[#686AF1] transition-colors cursor-pointer">How it Works</button>
+          <button onClick={() => handleNavClick('about')} className="text-left hover:text-[#686AF1] transition-colors cursor-pointer">About Us</button>
+          <Link href="/Inreachapp">
+            <button className="bg-[#686AF1] text-white px-6 py-2 rounded-full w-max hover:bg-[#5a5cd9] transition-colors cursor-pointer">Get Started</button>
+          </Link>
         </div>
       </div>
 
       <main className="flex flex-col gap-[32px] row-start-2 items-center">
         {/* Landing Page Section */}
-        <section className="relative flex justify-center w-full mt-30">
+        <section id="home" className="relative flex justify-center w-full mt-30">
 
-          <div className="absolute left-10 top-30 z-0 w-32 sm:w-40 md:w-52 lg:w-84">
+          <div className="absolute left-10 top-30 z-0 w-32 sm:w-40 md:w-52 lg:w-84 cursor-pointer">
             <img src="LeftWidgets.png" className="w-full h-auto" />
           </div>
 
-          <div className="absolute right-20 top-50 z-0 w-24 sm:w-36 md:w-48 lg:w-70">
+          <div className="absolute right-20 top-50 z-0 w-24 sm:w-36 md:w-48 lg:w-70 cursor-pointer">
             <img src="RightWidgets.png" className="w-full h-auto" />
           </div>
 
@@ -80,7 +94,7 @@ export default function Home() {
             className="flex flex-col items-center gap-4 mt-10 max-w-4xl w-full px-4 z-10 text-black text-center"
             id="hero-content"
           >
-            <div className="border-3 border-[#686AF1] tracking-tight rounded-full px-5 py-2 text-[#686AF1] text-md gabarito-medium bg-white bg-opacity-90">
+            <div className="border-3 border-[#686AF1] tracking-tight rounded-full px-5 py-2 text-[#686AF1] text-md gabarito-medium bg-white bg-opacity-90 cursor-pointer">
               Cold Outreach 4.0
             </div>
 
@@ -94,11 +108,11 @@ export default function Home() {
 
             <div className="flex flex-wrap justify-center gap-4 mt-4">
               <Link href="/Inreachapp">
-                <button className="bg-[#686AF1] text-white px-6 py-2 rounded-full text-lg gabarito-semibold shadow-lg">
+                <button className="bg-[#686AF1] text-white px-6 py-2 rounded-full text-lg gabarito-semibold shadow-lg hover:bg-[#5a5cd9] transition-colors cursor-pointer">
                   Get Started
                 </button>
               </Link>
-              <button className="bg-white text-[#686AF1] px-6 py-2 rounded-full text-lg gabarito-semibold border-3 border-[#686AF1]">
+              <button onClick={() => handleNavClick('how-it-works')} className="bg-white text-[#686AF1] px-6 py-2 rounded-full text-lg gabarito-semibold border-3 border-[#686AF1] hover:bg-[#f8f8ff] transition-colors cursor-pointer">
                 Learn More
               </button>
             </div>
@@ -106,7 +120,7 @@ export default function Home() {
         </section>
 
         {/* Features Section */}
-        <section className="relative flex justify-center w-full mt-30">
+        <section id="features" className="relative flex justify-center w-full mt-30">
           <div
             className="flex flex-col items-center gap-4 mt-10 max-w-4xl w-full px-4 z-10 text-black text-center"
             id="hero-content"
@@ -172,7 +186,7 @@ export default function Home() {
         </section>
 
         {/* How it Works Section */}
-        <section className="w-full flex justify-center items-center py-20 px-4">
+        <section id="how-it-works" className="w-full flex justify-center items-center py-20 px-4">
           <div className="max-w-7xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
 
             <div className="rounded-xl overflow-hidden shadow-lg w-full h-[300px] md:h-[500px]">
@@ -202,15 +216,15 @@ export default function Home() {
         </section>
 
         {/* Footer Section */}
-        <footer className="bg-[#f2f2f2] py-12 px-6 w-screen">
+        <footer id="about" className="bg-[#f2f2f2] py-12 px-6 w-screen">
           <div className="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-start gap-10">
             
             {/* Left Side: Image + Text */}
             <div className="flex flex-col gap-2 max-w-sm">
-              <img src="BlackLogo.png" className="w-28 h-auto mb-2" />
+              <img src="BlackLogo.png" className="w-28 h-auto mb-2 cursor-pointer" />
               <h3 className="text-lg w-[520px] gabarito-medium text-black tracking-tight leading-6">Inreach is a streamlined outreach tool built for solo founders and small teams—generate professional AI-written email pitches and automate delivery, so you can focus on scaling your business, not writing emails</h3>
               <h2 className="text-2xl tracking-tight w-max gabarito-semibold text-black mt-1">Outreach like a team of ten. Powered by one—You + AI</h2>
-              <h2 className="text-md w-max gabarito-semibold tracking-tight text-black mt-3">Hey there 👋 I’m Rao, the maker of Inreach. Feel free to check out my work over on Twitter</h2>
+              <h2 className="text-md w-max gabarito-semibold tracking-tight text-black mt-3">Hey there 👋 I'm Rao, the maker of Inreach. Feel free to check out my work over on Twitter</h2>
             </div>
 
             {/* Right Side: Two Columns */}
@@ -219,10 +233,10 @@ export default function Home() {
               <div>
                 <h1 className="text-lg gabarito-semibold text-black mb-2">Links</h1>
                 <ul className="space-y-1">
-                  <li><a href="#" className="text-gray-600 gabarito-medium hover:underline">Home</a></li>
-                  <li><a href="#" className="text-gray-600 gabarito-medium hover:underline">Features</a></li>
-                  <li><a href="#" className="text-gray-600 gabarito-medium hover:underline">How it Works</a></li>
-                  <li><a href="#" className="text-gray-600 gabarito-medium hover:underline">Support</a></li>
+                  <li><button onClick={() => handleNavClick('home')} className="text-gray-600 gabarito-medium hover:text-[#686AF1] transition-colors cursor-pointer">Home</button></li>
+                  <li><button onClick={() => handleNavClick('features')} className="text-gray-600 gabarito-medium hover:text-[#686AF1] transition-colors cursor-pointer">Features</button></li>
+                  <li><button onClick={() => handleNavClick('how-it-works')} className="text-gray-600 gabarito-medium hover:text-[#686AF1] transition-colors cursor-pointer">How it Works</button></li>
+                  <li><button onClick={() => handleNavClick('about')} className="text-gray-600 gabarito-medium hover:text-[#686AF1] transition-colors cursor-pointer">About Us</button></li>
                 </ul>
               </div>
 
@@ -230,9 +244,9 @@ export default function Home() {
               <div>
                 <h1 className="text-lg gabarito-semibold text-black mb-2">More</h1>
                 <ul className="space-y-1">
-                  <li><a href="#" className="text-gray-600 gabarito-medium hover:underline">Follow on Twitter</a></li>
-                  <li><a href="#" className="text-gray-600 gabarito-medium hover:underline">Follow on Instagram</a></li>
-                  <li><a href="#" className="text-gray-600 gabarito-medium hover:underline">Creator</a></li>
+                  <li><a href="https://twitter.com/getrepliq" target="_blank" rel="noopener noreferrer" className="text-gray-600 gabarito-medium hover:text-[#686AF1] transition-colors cursor-pointer">Follow on Twitter</a></li>
+                  <li><a href="https://instagram.com/getrepliq" target="_blank" rel="noopener noreferrer" className="text-gray-600 gabarito-medium hover:text-[#686AF1] transition-colors cursor-pointer">Follow on Instagram</a></li>
+                  <li><a href="https://twitter.com/heyspecterr" target="_blank" rel="noopener noreferrer" className="text-gray-600 gabarito-medium hover:text-[#686AF1] transition-colors cursor-pointer">Creator</a></li>
                 </ul>
               </div>
             </div>
