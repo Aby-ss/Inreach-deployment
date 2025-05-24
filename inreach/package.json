@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "cheerio": "^1.0.0",
+    "instagram-private-api": "^1.45.3",
+    "instagram-web-api": "^2.2.2",
     "next": "15.3.1",
     "node-mailjet": "^6.0.8",
     "nodemailer": "^7.0.3",
