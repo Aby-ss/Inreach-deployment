@@ -143,95 +143,26 @@ export default function Home() {
 
     setIsGenerating(true);
     try {
-      const newEmails = [];
-      const newSubjects = [];
-      
-      // Process one email at a time
-      for (let i = 0; i < numCopies; i++) {
-        console.log(`Generating email ${i + 1}/${numCopies}...`);
-        
-        // Get the business context from the textarea
-        const businessContext = text;
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          businessContext: text,
+          numCopies: numCopies
+        }),
+      });
 
-        // Prepare the prompt for the LLM
-        const prompt = `
-          You are an expert cold email strategist. Use the business context below to generate a personalized cold email.
-          Make sure the email is short and to the point, the very first paragraph or few sentences should be the hook that grabs attention.
-          And use no emojis.
-
-          📌 Business Context:
-          ${businessContext}
-
-          Generate a cold email that:
-          1. Has a strong hook in the first few sentences
-          2. Is personalized to the recipient
-          3. Is concise and to the point
-          4. Has a clear call to action
-
-          Format your response exactly like this:
-          SUBJECT: [Your subject line here]
-          BODY: [Your email body here]
-
-          Do not include any other text or formatting in your response.
-        `;
-
-        // Try up to 3 times with increasing delays
-        let responseText = '';
-        let attempts = 0;
-        const maxAttempts = 3;
-        
-        while (attempts < maxAttempts) {
-          try {
-            attempts++;
-            console.log(`Attempt ${attempts}/${maxAttempts}...`);
-            
-            const response = await fetch('/api/generate', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                prompt: prompt
-              }),
-            });
-
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            responseText = data.response;
-            break; // Success, exit the retry loop
-          } catch (error) {
-            console.error(`Attempt ${attempts} failed:`, error);
-            if (attempts === maxAttempts) {
-              throw new Error(`Failed to generate email after ${maxAttempts} attempts: ${error.message}`);
-            }
-            // Wait before retrying (2s, 4s, 6s)
-            await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
-          }
-        }
-        
-        // Parse subject and body with more robust regex
-        const subjectMatch = responseText.match(/SUBJECT:\s*([^\n]+)/i);
-        const bodyMatch = responseText.match(/BODY:\s*([\s\S]*?)(?:\n\s*$|$)/i);
-        
-        // Extract and clean the subject and body
-        const subject = subjectMatch ? subjectMatch[1].trim() : 'No subject';
-        let body = bodyMatch ? bodyMatch[1].trim() : responseText.trim();
-        
-        // Remove any remaining subject line markers from the body
-        body = body.replace(/^SUBJECT:.*$/im, '').trim();
-        
-        // Remove any emojis from the subject
-        const cleanSubject = subject.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
-        
-        newEmails.push(body);
-        newSubjects.push(cleanSubject);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate emails');
       }
+
+      const { emails, subjects } = await response.json();
       
-      setGeneratedEmails(prev => [...prev, ...newEmails]);
-      setEmailSubjects(prev => [...prev, ...newSubjects]);
+      setGeneratedEmails(prev => [...prev, ...emails]);
+      setEmailSubjects(prev => [...prev, ...subjects]);
     } catch (error) {
       console.error("Error generating copies:", error);
       alert(`Error generating copies: ${error.message}\nPlease try again.`);
