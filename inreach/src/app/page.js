@@ -195,6 +195,9 @@ export default function Home() {
                 controls
                 controlsList="nodownload nofullscreen noremoteplayback"
                 disablePictureInPicture
+                autoPlay
+                loop
+                playsInline
               >
                 <source src="/demo.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
